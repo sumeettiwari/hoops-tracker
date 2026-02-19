@@ -1150,15 +1150,61 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
 
 function SeasonTable({ players, seasonData }) {
   const cols = "1fr 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
+  const [sortKey, setSortKey] = useState("pts");
+  const [sortAsc, setSortAsc] = useState(false);
+  const handleSort = (key) => {
+    if (sortKey === key) setSortAsc((a) => !a);
+    else { setSortKey(key); setSortAsc(false); }
+  };
+  const COLS = [
+    { key: "player", label: "PLAYER", align: "left",  getValue: (d, p) => p.name },
+    { key: "ngt",    label: "NGT",    align: "right", getValue: (d)    => d.nights },
+    { key: "gp",     label: "GP",     align: "right", getValue: (d)    => d.gp },
+    { key: "pts",    label: "PTS",    align: "right", getValue: (d)    => pts(d.totals) },
+    { key: "fgpct",  label: "FG%",    align: "right", getValue: (d)    => d.totals.fga > 0 ? d.totals.fgm / d.totals.fga : -1 },
+    { key: "reb",    label: "REB",    align: "right", getValue: (d)    => d.totals.reb },
+    { key: "ast",    label: "AST",    align: "right", getValue: (d)    => d.totals.ast },
+    { key: "stl",    label: "STL",    align: "right", getValue: (d)    => d.totals.stl },
+    { key: "to",     label: "TO",     align: "right", getValue: (d)    => d.totals.to },
+    { key: "fgm",    label: "FGM",    align: "right", getValue: (d)    => d.totals.fgm },
+    { key: "wl",     label: "W-L",    align: "right", getValue: (d)    => d.w - d.l },
+    { key: "winpct", label: "WIN%",   align: "right", getValue: (d)    => (d.w + d.l) > 0 ? d.w / (d.w + d.l) : -1 },
+  ];
+  const activeSortCol = COLS.find((c) => c.key === sortKey);
+  const sortedPlayers = [...players].sort((a, b) => {
+    const da = seasonData[a.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
+    const db = seasonData[b.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
+    if (da.nights === 0 && db.nights !== 0) return 1;
+    if (da.nights !== 0 && db.nights === 0) return -1;
+    const va = activeSortCol.getValue(da, a);
+    const vb = activeSortCol.getValue(db, b);
+    const cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
+    return sortAsc ? cmp : -cmp;
+  });
   return (
     <>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#555", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
-        <span style={{ textAlign: "left" }}>PLAYER</span>
-        <span>NGT</span><span>GP</span><span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>TO</span><span>FGM</span>
-        <span style={{ color: "#22c55e" }}>W-L</span>
-        <span style={{ color: "#22c55e" }}>WIN%</span>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
+        {COLS.map((c) => {
+          const isActive = sortKey === c.key;
+          const isGreen  = c.key === "wl" || c.key === "winpct";
+          const arrow    = isActive ? (sortAsc ? " ▲" : " ▼") : "";
+          return (
+            <span
+              key={c.key}
+              onClick={() => handleSort(c.key)}
+              style={{
+                textAlign: c.align,
+                cursor: "pointer",
+                color: isActive ? "#f97316" : isGreen ? "#22c55e" : "#555",
+                userSelect: "none",
+              }}
+            >
+              {c.label}{arrow}
+            </span>
+          );
+        })}
       </div>
-      {players.map((p, i) => {
+      {sortedPlayers.map((p, i) => {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
         const p_ = pts(d.totals);
         const dim = d.nights === 0;
