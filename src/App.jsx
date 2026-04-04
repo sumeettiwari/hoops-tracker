@@ -503,6 +503,9 @@ export default function App() {
       if (sortCol === "fgm")   return d.totals.fgm;
       if (sortCol === "fga")   return d.totals.fga;
       if (sortCol === "fgpct") return d.totals.fga > 0 ? d.totals.fgm / d.totals.fga : 0;
+      if (sortCol === "fg3pct") return (d.totals.pts3a || 0) > 0 ? d.totals.pts3 / d.totals.pts3a : 0;
+      if (sortCol === "pts3")  return d.totals.pts3 || 0;
+      if (sortCol === "pts3a") return d.totals.pts3a || 0;
       if (sortCol === "gp")    return d.gp;
       if (sortCol === "nights") return d.nights;
       if (sortCol === "winpct") return (d.w + d.l) > 0 ? d.w / (d.w + d.l) : -1;
@@ -1401,7 +1404,7 @@ function AveragesTable({ players, seasonData }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
-  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 52px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 44px 44px 52px 52px";
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -1432,6 +1435,8 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
         <ColHeader col="stl"   label="STL" />
         <ColHeader col="to"    label="TO" />
         <ColHeader col="fgm"   label="FGM" />
+        <ColHeader col="pts3"  label="3PM" />
+        <ColHeader col="pts3a" label="3PA" />
         <ColHeader col="winpct" label="W-L"  color="#22c55e" />
         <ColHeader col="winpct" label="WIN%" color="#22c55e" />
       </div>
@@ -1455,6 +1460,8 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.stl ? "—" : d.totals.stl}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.to  ? "—" : d.totals.to}</span>
             <span style={{ color: dim ? "#2a2d35" : "#555", fontSize: 11 }}>{dim || !d.totals.fgm ? "—" : `${d.totals.fgm}/${d.totals.fga}`}</span>
+            <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.pts3 ? "—" : d.totals.pts3}</span>
+            <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.pts3a ? "—" : d.totals.pts3a}</span>
             <span style={{ color: !hasWL ? "#2a2d35" : "#e8e4d9" }}>
               {!hasWL ? "—" : <><span style={{ color: "#86efac" }}>{d.w}W</span><span style={{ color: "#555" }}>-</span><span style={{ color: "#fca5a5" }}>{d.l}L</span></>}
             </span>
