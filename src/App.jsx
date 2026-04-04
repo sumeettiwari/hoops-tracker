@@ -431,6 +431,9 @@ export default function App() {
       if (key === "pts3") {
         s.pts3a = Math.max(0, (s.pts3a || 0) + delta);
       }
+      if (key === "pts3a") {
+        s.fga = Math.max(0, (s.fga || 0) + delta);
+      }
       g.stats[pid] = s;
       newStats = s;
       games[activeGame] = g;
