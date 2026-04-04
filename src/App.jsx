@@ -626,25 +626,27 @@ export default function App() {
       )}
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #1a1d22", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100, flexWrap: "wrap", gap: 4 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <nav style={{ display: "flex", gap: 4 }}>
-            {[{ id: "roster", label: "ROSTER" }, { id: "night", label: "TRACK NIGHT" }, { id: "stats", label: "STATS" }].map(({ id, label }) => (
-              <button key={id} className={`nav-btn ${view === id ? "active" : ""}`}
-                onClick={() => { if (id === "night" && !activeNight) { notify("Start a night from Roster"); return; } setView(id); }}>
-                {label}
-              </button>
-            ))}
-          </nav>
-          {isAdmin ? (
-            <button className="danger-btn" style={{ marginLeft: 8 }} onClick={handleLogout}>SIGN OUT</button>
-          ) : (
-            <button className="ghost-btn" style={{ marginLeft: 8, fontSize: 11 }} onClick={() => setView("login")}>ADMIN</button>
-          )}
+      <div style={{ borderBottom: "1px solid #1a1d22", position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, flexWrap: "wrap", gap: 4, width: "100%" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <nav style={{ display: "flex", gap: 4 }}>
+              {[{ id: "roster", label: "ROSTER" }, { id: "night", label: "TRACK NIGHT" }, { id: "stats", label: "STATS" }].map(({ id, label }) => (
+                <button key={id} className={`nav-btn ${view === id ? "active" : ""}`}
+                  onClick={() => { if (id === "night" && !activeNight) { notify("Start a night from Roster"); return; } setView(id); }}>
+                  {label}
+                </button>
+              ))}
+            </nav>
+            {isAdmin ? (
+              <button className="danger-btn" style={{ marginLeft: 8 }} onClick={handleLogout}>SIGN OUT</button>
+            ) : (
+              <button className="ghost-btn" style={{ marginLeft: 8, fontSize: 11 }} onClick={() => setView("login")}>ADMIN</button>
+            )}
+          </div>
         </div>
       </div>
 
