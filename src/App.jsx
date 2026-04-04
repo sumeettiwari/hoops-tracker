@@ -5,7 +5,7 @@ import Login from "./Login";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const emptyStats = () => ({ pts2: 0, pts3: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to: 0 });
+const emptyStats = () => ({ pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to: 0 });
 const pts     = (s) => (s.pts2 || 0) * 2 + (s.pts3 || 0) * 3;
 const fgpct   = (s) => s.fga > 0 ? ((s.fgm / s.fga) * 100).toFixed(0) + "%" : "—";
 const winpct  = (w, l) => (w + l) === 0 ? "—" : ((w / (w + l)) * 100).toFixed(0) + "%";
@@ -115,7 +115,7 @@ async function fetchNights() {
 
   const { data: statRows, error: statErr } = await supabase
     .from("player_stats")
-    .select("game_id, player_id, pts2, pts3, fgm, fga, reb, ast, stl, to_");
+    .select("game_id, player_id, pts2, pts3, pts3a, fgm, fga, reb, ast, stl, to_");
   if (statErr) throw statErr;
 
   // Assemble into the shape the app expects
@@ -132,7 +132,7 @@ async function fetchNights() {
         const stats = {};
         statRows.filter((r) => r.game_id === g.id).forEach((r) => {
           stats[r.player_id] = {
-            pts2: r.pts2 || 0, pts3: r.pts3 || 0,
+            pts2: r.pts2 || 0, pts3: r.pts3 || 0, pts3a: r.pts3a || 0,
             fgm:  r.fgm  || 0, fga:  r.fga  || 0,
             reb:  r.reb  || 0, ast:  r.ast  || 0,
             stl:  r.stl  || 0, to:   r.to_  || 0,
@@ -222,7 +222,7 @@ async function dbCreateGame(nightId, gameNumber, teamA, teamB, playerIds) {
       .from("player_stats")
       .insert(playerIds.map((pid) => ({
         game_id: game.id, player_id: pid,
-        pts2: 0, pts3: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to_: 0,
+        pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to_: 0,
       })));
     if (se) throw se;
   }
@@ -242,7 +242,7 @@ async function dbUpdateStat(gameId, playerId, statObj) {
     .from("player_stats")
     .upsert({
       game_id: gameId, player_id: playerId,
-      pts2: statObj.pts2, pts3: statObj.pts3,
+      pts2: statObj.pts2, pts3: statObj.pts3, pts3a: statObj.pts3a || 0,
       fgm: statObj.fgm, fga: statObj.fga,
       reb: statObj.reb, ast: statObj.ast,
       stl: statObj.stl, to_: statObj.to,
@@ -427,6 +427,9 @@ export default function App() {
       if (key === "pts2" || key === "pts3") {
         s.fga = Math.max(0, (s.fga || 0) + delta);
         s.fgm = Math.max(0, (s.fgm || 0) + delta);
+      }
+      if (key === "pts3") {
+        s.pts3a = Math.max(0, (s.pts3a || 0) + delta);
       }
       g.stats[pid] = s;
       newStats = s;
@@ -1215,25 +1218,25 @@ function PlayerCard({ player, stats, team, onLog }) {
         ))}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-        <button onClick={() => onLog("fga", 1)}
+        <button onClick={() => { onLog("fga", 1); }}
           style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "5px 4px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#ef444420"; e.currentTarget.style.borderColor = "#ef4444"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>MISS</span>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>2PT MISS</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>+FGA</span>
         </button>
-        <button onClick={() => onLog("fgm", 1)}
+        <button onClick={() => { onLog("fga", 1); onLog("pts3a", 1); }}
           style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "5px 4px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center" }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#555"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#2a2d35"; }}>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>+FGM</span>
-          <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>manual</span>
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#ef444420"; e.currentTarget.style.borderColor = "#ef4444"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>3PT MISS</span>
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>+FGA +3PA</span>
         </button>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, paddingTop: 4, borderTop: "1px solid #1e2128" }}>
         <span style={{ fontFamily: "'Bebas Neue'", fontSize: 9, letterSpacing: 2, color: "#444", display: "flex", alignItems: "center", marginRight: 2 }}>UNDO</span>
         {[
-          { key: "pts2", label: "2" }, { key: "pts3", label: "3" },
+          { key: "pts2", label: "2" }, { key: "pts3", label: "3" }, { key: "pts3a", label: "3PA" },
           { key: "reb", label: "R" }, { key: "ast", label: "A" },
           { key: "stl", label: "S" }, { key: "to",  label: "T" },
           { key: "fga", label: "FGA" }, { key: "fgm", label: "FGM" },
@@ -1324,6 +1327,7 @@ function AveragesTable({ players, seasonData }) {
       fgpct: t.fga > 0 ? t.fgm / t.fga : 0,
       fg3pct: t.pts3 > 0 || (t.fga - t.fgm) >= 0 ? (t.pts3 / Math.max(t.pts3 + (t.fga - t.fgm - (t.pts2 || 0)), 1)) : 0,
       winpct: (d.w + d.l) > 0 ? d.w / (d.w + d.l) : 0,
+      fg3pct: (t.pts3a || 0) > 0 ? t.pts3 / t.pts3a : 0,
     };
   };
 
@@ -1350,7 +1354,7 @@ function AveragesTable({ players, seasonData }) {
     );
   };
 
-  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px";
+  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px 52px";
   const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
   const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
 
@@ -1364,7 +1368,8 @@ function AveragesTable({ players, seasonData }) {
         <ColHeader col="apg"  label="APG" />
         <ColHeader col="spg"  label="SPG" />
         <ColHeader col="tpg"  label="TPG" />
-        <ColHeader col="fgpct" label="FG%" />
+        <ColHeader col="fgpct"  label="FG%" />
+        <ColHeader col="fg3pct" label="3P%" />
         <ColHeader col="winpct" label="WIN%" color="#22c55e" />
       </div>
       {sorted.map((p, i) => {
@@ -1382,6 +1387,7 @@ function AveragesTable({ players, seasonData }) {
             <span style={{ color: "#888" }}>{fmt(a.spg)}</span>
             <span style={{ color: a.tpg > 0 ? "#888" : "#333" }}>{fmt(a.tpg)}</span>
             <span style={{ color: "#888" }}>{fmtPct(a.fgpct)}</span>
+            <span style={{ color: "#888" }}>{a.fg3pct > 0 ? fmtPct(a.fg3pct) : "—"}</span>
             <span style={{ color: (d.w + d.l) === 0 ? "#333" : a.winpct >= 0.6 ? "#86efac" : a.winpct <= 0.4 ? "#fca5a5" : "#888" }}>
               {(d.w + d.l) === 0 ? "—" : fmtPct(a.winpct)}
             </span>
@@ -1395,7 +1401,7 @@ function AveragesTable({ players, seasonData }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
-  const cols = "140px 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 52px 52px";
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -1443,6 +1449,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim ? "—" : d.gp}</span>
             <span style={{ color: dim ? "#2a2d35" : p_ > 0 ? "#e8e4d9" : "#555", fontWeight: 600 }}>{dim || p_ === 0 ? "—" : p_}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim ? "—" : fgpct(d.totals)}</span>
+            <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !(d.totals.pts3a > 0) ? "—" : ((d.totals.pts3 / d.totals.pts3a) * 100).toFixed(0) + "%"}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.reb ? "—" : d.totals.reb}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.ast ? "—" : d.totals.ast}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.stl ? "—" : d.totals.stl}</span>
