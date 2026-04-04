@@ -266,7 +266,7 @@ export default function App() {
   const [players,      setPlayers]      = useState([]);
   const [nights,       setNights]       = useState([]);
   const [loading,      setLoading]      = useState(true);
-  const [view,         setView]         = useState("roster");
+  const [view,         setView]         = useState("stats");
   const [activeNight,  setActiveNight]  = useState(null);
   const [activeGame,   setActiveGame]   = useState(null);
   const [activePid,    setActivePid]    = useState(null);
@@ -638,7 +638,7 @@ export default function App() {
       {/* Header */}
       <div style={{ borderBottom: "1px solid #1a1d22", position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100, width: "100%" }}>
         <div className="centered" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, flexWrap: "wrap", gap: 4 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div onClick={() => setView("stats")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
             <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span>
           </div>
