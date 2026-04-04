@@ -1275,7 +1275,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
   return (
     <div style={{ minWidth: 720 }}>
       <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right" }}>
-        <ColHeader col="pts" label="PLAYER" />
+        <span style={{ textAlign: "left", color: "#555" }}>PLAYER</span>
         <ColHeader col="nights" label="NGT" />
         <ColHeader col="gp"    label="GP" />
         <ColHeader col="pts"   label="PTS" />
