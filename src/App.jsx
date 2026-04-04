@@ -497,11 +497,11 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative", overflowX: "hidden", width: "100%" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative", width: "100%", maxWidth: "100vw" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { background: #0a0c0f; overflow-x: hidden; max-width: 100%; }
+        html, body { background: #0a0c0f; }
         @media (max-width: 640px) {
           .nav-btn { padding: 8px 8px; font-size: 12px; letter-spacing: 1px; }
           .primary-btn { font-size: 14px; padding: 10px 16px; }
@@ -567,8 +567,8 @@ export default function App() {
         .court-line { position: absolute; border: 1px solid rgba(249,115,22,0.04); border-radius: 50%; pointer-events: none; }
       `}</style>
 
-      <div className="court-line" style={{ width: 600, height: 600, top: -200, right: -200, overflow: "hidden" }} />
-      <div className="court-line" style={{ width: 300, height: 300, top: 50, right: 50, overflow: "hidden" }} />
+      <div className="court-line" style={{ width: 600, height: 600, top: -200, right: -200, display: "none" }} />
+      <div className="court-line" style={{ width: 300, height: 300, top: 50, right: 50, display: "none" }} />
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, transparent, #f97316, transparent)" }} />
 
       {notif && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: "#f97316", color: "#000", padding: "10px 24px", borderRadius: 4, fontFamily: "'Bebas Neue'", letterSpacing: 2, fontSize: 15, zIndex: 9999, animation: "slideIn 0.2s ease", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>{notif}</div>}
@@ -966,8 +966,8 @@ export default function App() {
                     </div>
 
                     <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 32 }}>
-                      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                        <SeasonTable players={sortedSeason} seasonData={seasonData} onSort={(col) => setSortCol(col)} sortCol={sortCol} sortDir={sortDir} setSortDir={setSortDir} />
+                      <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch", position: "relative" }}>
+                        <SeasonTable players={sortedSeason} seasonData={seasonData} onSort={(col) => setSortCol(col)} sortCol={sortCol} sortDir={sortDir} setSortDir={setSortDir} setSortCol={setSortCol} />
                       </div>
                     </div>
 
