@@ -185,6 +185,14 @@ async function dbDeleteNight(id) {
   if (error) throw error;
 }
 
+async function dbUpdateNightUrl(id, youtubeUrl) {
+  const { error } = await supabase
+    .from("nights")
+    .update({ youtube_url: youtubeUrl || null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 async function dbCreateGame(nightId, gameNumber, teamA, teamB, playerIds) {
   const { data: game, error: ge } = await supabase
     .from("games")
@@ -368,6 +376,11 @@ export default function App() {
     await dbDeleteNight(id);
     setNights((prev) => prev.filter((n) => n.id !== id));
   }, "Night deleted");
+
+  const updateNightUrl = (id, url) => wrap(async () => {
+    await dbUpdateNightUrl(id, url.trim());
+    setNights((prev) => prev.map((n) => n.id === id ? { ...n, youtubeUrl: url.trim() } : n));
+  }, "Link saved!");
 
   // ── game ──
   const openTeamSetup = () => { setTeamA(new Set()); setTeamB(new Set()); setTeamSetup(true); };
@@ -1030,6 +1043,23 @@ export default function App() {
                           {/* Collapsible body */}
                           {isExpanded && (
                             <>
+                              {isAdmin && (
+                                <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", background: "#0a0c0f", display: "flex", gap: 8, alignItems: "center" }}>
+                                  <input
+                                    defaultValue={n.youtubeUrl || ""}
+                                    placeholder="YouTube URL..."
+                                    id={`yt-${n.id}`}
+                                    style={{ flex: 1, background: "#111318", border: "1px solid #2a2d35", borderRadius: 4, padding: "6px 10px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 12 }}
+                                  />
+                                  <button className="ghost-btn" style={{ flexShrink: 0 }}
+                                    onClick={() => {
+                                      const val = document.getElementById(`yt-${n.id}`)?.value || "";
+                                      updateNightUrl(n.id, val);
+                                    }}>
+                                    SAVE LINK
+                                  </button>
+                                </div>
+                              )}
                               <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
                                 <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
                                 <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
