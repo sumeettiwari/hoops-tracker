@@ -272,6 +272,8 @@ export default function App() {
   const [teamA,        setTeamA]        = useState(new Set());
   const [teamB,        setTeamB]        = useState(new Set());
   const [trackMode,    setTrackMode]    = useState("grid");
+  const [sortCol,      setSortCol]      = useState("pts");
+  const [sortDir,      setSortDir]      = useState("desc");
 
   // ── auth ──
   useEffect(() => {
@@ -465,7 +467,26 @@ export default function App() {
     : [];
   const nightTotals  = activeNight ? mergePlayerStats(activeNight) : {};
   const seasonData   = seasonStats(players, nights);
-  const sortedSeason = [...players].sort((a, b) => pts(seasonData[b.id]?.totals || emptyStats()) - pts(seasonData[a.id]?.totals || emptyStats()));
+  const sortedSeason = [...players].sort((a, b) => {
+    const da = seasonData[a.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
+    const db = seasonData[b.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
+    const val = (d) => {
+      if (sortCol === "pts")   return pts(d.totals);
+      if (sortCol === "reb")   return d.totals.reb;
+      if (sortCol === "ast")   return d.totals.ast;
+      if (sortCol === "stl")   return d.totals.stl;
+      if (sortCol === "to")    return d.totals.to;
+      if (sortCol === "fgm")   return d.totals.fgm;
+      if (sortCol === "fga")   return d.totals.fga;
+      if (sortCol === "fgpct") return d.totals.fga > 0 ? d.totals.fgm / d.totals.fga : 0;
+      if (sortCol === "gp")    return d.gp;
+      if (sortCol === "nights") return d.nights;
+      if (sortCol === "winpct") return (d.w + d.l) > 0 ? d.w / (d.w + d.l) : -1;
+      return pts(d.totals);
+    };
+    const diff = val(db) - val(da);
+    return sortDir === "desc" ? diff : -diff;
+  });
   const hasTeams     = (g) => g && (g.teams.a.length > 0 || g.teams.b.length > 0);
 
   // ── loading / auth gates ──
@@ -922,7 +943,7 @@ export default function App() {
                   <div style={{ textAlign: "center", padding: 80, color: "#333", border: "1px dashed #1e2128", borderRadius: 8, fontFamily: "'DM Sans'", fontSize: 14 }}>No nights recorded yet</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 28 }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 28, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4 }}>
                       {[
                         { label: "POINTS LEADER",  val: (d) => pts(d.totals), fmt: (d) => pts(d.totals) + " PTS", accent: "#f97316" },
                         { label: "REBOUND LEADER", val: (d) => d.totals.reb,  fmt: (d) => d.totals.reb + " REB",  accent: "#f97316" },
@@ -934,7 +955,7 @@ export default function App() {
                         if (!leader) return null;
                         const d = seasonData[leader.id];
                         return (
-                          <div key={label} style={{ background: "#111318", borderLeft: `3px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "14px 16px" }}>
+                          <div key={label} style={{ background: "#111318", borderLeft: `3px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "14px 16px", minWidth: 160, flexShrink: 0 }}>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: accent, marginBottom: 4 }}>{label}</div>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2 }}>{leader.name}</div>
                             <div style={{ fontFamily: "'DM Mono'", fontSize: 16, color: "#888" }}>{fmt(d)}</div>
@@ -944,8 +965,10 @@ export default function App() {
                       })}
                     </div>
 
-                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, overflowX: "auto", marginBottom: 32, WebkitOverflowScrolling: "touch" }}>
-                      <SeasonTable players={sortedSeason} seasonData={seasonData} />
+                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 32 }}>
+                      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                        <SeasonTable players={sortedSeason} seasonData={seasonData} onSort={(col) => setSortCol(col)} sortCol={sortCol} sortDir={sortDir} setSortDir={setSortDir} />
+                      </div>
                     </div>
 
                     <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 3, marginBottom: 14 }}>NIGHT LOG</h2>
@@ -1155,15 +1178,40 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
 
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
-function SeasonTable({ players, seasonData }) {
+function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
   const cols = "140px 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const ColHeader = ({ col, label, color }) => {
+    const active = sortCol === col;
+    const arrow = active ? (sortDir === "desc" ? " ↓" : " ↑") : "";
+    return (
+      <span onClick={() => handleSort(col)}
+        style={{ cursor: "pointer", color: active ? (color || "#f97316") : "#555", userSelect: "none", whiteSpace: "nowrap" }}>
+        {label}{arrow}
+      </span>
+    );
+  };
+
   return (
-    <>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#555", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
-        <span style={{ textAlign: "left" }}>PLAYER</span>
-        <span>NGT</span><span>GP</span><span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>TO</span><span>FGM</span>
-        <span style={{ color: "#22c55e" }}>W-L</span>
-        <span style={{ color: "#22c55e" }}>WIN%</span>
+    <div style={{ minWidth: 720 }}>
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right" }}>
+        <ColHeader col="pts" label="PLAYER" />
+        <ColHeader col="nights" label="NGT" />
+        <ColHeader col="gp"    label="GP" />
+        <ColHeader col="pts"   label="PTS" />
+        <ColHeader col="fgpct" label="FG%" />
+        <ColHeader col="reb"   label="REB" />
+        <ColHeader col="ast"   label="AST" />
+        <ColHeader col="stl"   label="STL" />
+        <ColHeader col="to"    label="TO" />
+        <ColHeader col="fgm"   label="FGM" />
+        <ColHeader col="winpct" label="W-L"  color="#22c55e" />
+        <ColHeader col="winpct" label="WIN%" color="#22c55e" />
       </div>
       {players.map((p, i) => {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
@@ -1171,7 +1219,7 @@ function SeasonTable({ players, seasonData }) {
         const dim = d.nights === 0;
         const hasWL = (d.w + d.l) > 0;
         return (
-          <div key={p.id} style={{ padding: "11px 16px", borderBottom: "1px solid #0f1115", background: i === 0 && !dim ? "rgba(249,115,22,0.04)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13, minWidth: 720 }}>
+          <div key={p.id} style={{ padding: "11px 16px", borderBottom: "1px solid #0f1115", background: i === 0 && !dim ? "rgba(249,115,22,0.04)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
             <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontWeight: 500, color: dim ? "#2a2d35" : i === 0 ? "#f97316" : "#e8e4d9", display: "flex", alignItems: "center", gap: 6 }}>
               {i === 0 && !dim && <span>👑</span>}{p.name}
             </span>
@@ -1193,6 +1241,6 @@ function SeasonTable({ players, seasonData }) {
           </div>
         );
       })}
-    </>
+    </div>
   );
 }
