@@ -250,22 +250,9 @@ async function dbSetWinner(gameId, winner) {
   if (error) throw error;
 }
 
-// ─── useIsMobile ──────────────────────────────────────────────────────────────
-
-function useIsMobile(bp = 640) {
-  const [m, setM] = React.useState(() => window.innerWidth < bp);
-  React.useEffect(() => {
-    const fn = () => setM(window.innerWidth < bp);
-    window.addEventListener("resize", fn);
-    return () => window.removeEventListener("resize", fn);
-  }, [bp]);
-  return m;
-}
-
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const isMobile = useIsMobile();
   const [session,      setSession]      = useState(undefined); // undefined = loading, null = logged out
   const [isAdmin,      setIsAdmin]      = useState(false);
   const [players,      setPlayers]      = useState([]);
@@ -489,11 +476,16 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative", overflowX: "hidden", width: "100%" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0c0f; }
+        html, body { background: #0a0c0f; overflow-x: hidden; max-width: 100%; }
+        @media (max-width: 640px) {
+          .nav-btn { padding: 8px 8px; font-size: 12px; letter-spacing: 1px; }
+          .primary-btn { font-size: 14px; padding: 10px 16px; }
+          .ghost-btn { font-size: 11px; padding: 5px 9px; }
+        }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #111; } ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 2px; }
         button { cursor: pointer; border: none; outline: none; } input { outline: none; }
 
@@ -552,21 +544,10 @@ export default function App() {
         @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
         .slide-in { animation: slideIn 0.2s ease; }
         .court-line { position: absolute; border: 1px solid rgba(249,115,22,0.04); border-radius: 50%; pointer-events: none; }
-
-        /* Scrollable table wrapper */
-        .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-        /* ── Mobile: 640px and below ── */
-        @media (max-width: 640px) {
-          .nav-btn  { padding: 8px 10px; font-size: 12px; letter-spacing: 1px; }
-          .game-tab { padding: 6px 10px; font-size: 12px; }
-          .stat-btn { padding: 12px 4px; }
-          .modal    { padding: 16px; }
-        }
       `}</style>
 
-      <div className="court-line" style={{ width: 600, height: 600, top: -200, right: -200 }} />
-      <div className="court-line" style={{ width: 300, height: 300, top: 50, right: 50 }} />
+      <div className="court-line" style={{ width: 600, height: 600, top: -200, right: -200, overflow: "hidden" }} />
+      <div className="court-line" style={{ width: 300, height: 300, top: 50, right: 50, overflow: "hidden" }} />
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "linear-gradient(90deg, transparent, #f97316, transparent)" }} />
 
       {notif && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: "#f97316", color: "#000", padding: "10px 24px", borderRadius: 4, fontFamily: "'Bebas Neue'", letterSpacing: 2, fontSize: 15, zIndex: 9999, animation: "slideIn 0.2s ease", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>{notif}</div>}
@@ -610,10 +591,10 @@ export default function App() {
       )}
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #1a1d22", padding: isMobile ? "0 12px" : "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10 }}>
-          <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover" }} />
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span> 
+      <div style={{ borderBottom: "1px solid #1a1d22", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100, flexWrap: "wrap", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🏀</span>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>HOOPS TRACKER</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <nav style={{ display: "flex", gap: 4 }}>
@@ -636,7 +617,7 @@ export default function App() {
       {view === "login" && <Login onLogin={() => setView("roster")} />}
 
       {view !== "login" && (
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 20px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px", width: "100%" }}>
 
           {loading ? (
             <div style={{ textAlign: "center", padding: 80, color: "#333", fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 4 }}>LOADING DATA...</div>
@@ -647,16 +628,16 @@ export default function App() {
             {view === "roster" && (
               <div className="slide-in">
                 <div style={{ marginBottom: 28 }}>
-                  <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: isMobile ? 26 : 36, letterSpacing: 4, marginBottom: 4 }}>SQUAD ROSTER</h1>
+                  <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 4, marginBottom: 4 }}>SQUAD ROSTER</h1>
                   <p style={{ fontFamily: "'DM Sans'", fontSize: 13, color: "#555" }}>{players.length} players · Add everyone once, pick who showed up each week</p>
                 </div>
 
                 {isAdmin && (
                   <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, padding: 20, marginBottom: 20 }}>
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 10 }}>
                       <input value={newName} onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addPlayer()} placeholder="Player name..."
-                        style={{ flex: 1, minWidth: 0, background: "#0a0c0f", border: "1px solid #2a2d35", borderRadius: 4, padding: "10px 14px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 14 }} />
-                      <button className="primary-btn" style={{ fontSize: 14, padding: "10px 20px", width: isMobile ? "100%" : undefined }} onClick={addPlayer}>ADD PLAYER</button>
+                        style={{ flex: 1, background: "#0a0c0f", border: "1px solid #2a2d35", borderRadius: 4, padding: "10px 14px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 14 }} />
+                      <button className="primary-btn" style={{ fontSize: 14, padding: "10px 20px" }} onClick={addPlayer}>ADD PLAYER</button>
                     </div>
                   </div>
                 )}
@@ -681,7 +662,7 @@ export default function App() {
                       <input value={nightDate} onChange={(e) => setNightDate(e.target.value)} type="date"
                         style={{ background: "#0a0c0f", border: "1px solid #2a2d35", borderRadius: 4, padding: "10px 14px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 13 }} />
                       <input value={nightUrl} onChange={(e) => setNightUrl(e.target.value)} placeholder="YouTube URL (optional)..."
-                        style={{ flex: 1, minWidth: isMobile ? 0 : 200, background: "#0a0c0f", border: "1px solid #2a2d35", borderRadius: 4, padding: "10px 14px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 13 }} />
+                        style={{ flex: 1, minWidth: 200, background: "#0a0c0f", border: "1px solid #2a2d35", borderRadius: 4, padding: "10px 14px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 13 }} />
                     </div>
                     <div style={{ marginBottom: 20 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -740,7 +721,7 @@ export default function App() {
               <div className="slide-in">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
                   <div>
-                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: isMobile ? 22 : 32, letterSpacing: 4 }}>{activeNight.date} <span style={{ color: "#555", fontSize: isMobile ? 16 : 22 }}>· {activeNight.games.length} GAMES</span></h1>
+                    <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 32, letterSpacing: 4 }}>{activeNight.date} <span style={{ color: "#555", fontSize: 22 }}>· {activeNight.games.length} GAMES</span></h1>
                     <div style={{ display: "flex", gap: 12, marginTop: 2 }}>
                       <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555" }}>{nightGamePlayers.length} players tonight</span>
                       {activeNight.youtubeUrl && <a href={activeNight.youtubeUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ OPEN VIDEO</a>}
@@ -842,7 +823,7 @@ export default function App() {
 
                     {/* Focus mode */}
                     {trackMode === "focus" && (
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 16 : 20 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
                         <div>
                           <div style={{ marginBottom: 14 }}>
                             <div className="section-label">SELECT PLAYER</div>
@@ -931,7 +912,7 @@ export default function App() {
             {view === "stats" && (
               <div className="slide-in">
                 <div style={{ marginBottom: 28 }}>
-                  <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: isMobile ? 26 : 36, letterSpacing: 4, marginBottom: 4 }}>SEASON STATS</h1>
+                  <h1 style={{ fontFamily: "'Bebas Neue'", fontSize: 36, letterSpacing: 4, marginBottom: 4 }}>SEASON STATS</h1>
                   <p style={{ fontFamily: "'DM Sans'", fontSize: 13, color: "#555" }}>
                     {nights.length} night{nights.length !== 1 ? "s" : ""} · {nights.reduce((a, n) => a + n.games.length, 0)} total games
                   </p>
@@ -941,7 +922,7 @@ export default function App() {
                   <div style={{ textAlign: "center", padding: 80, color: "#333", border: "1px dashed #1e2128", borderRadius: 8, fontFamily: "'DM Sans'", fontSize: 14 }}>No nights recorded yet</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
                       {[
                         { label: "POINTS LEADER",  val: (d) => pts(d.totals), fmt: (d) => pts(d.totals) + " PTS", accent: "#f97316" },
                         { label: "REBOUND LEADER", val: (d) => d.totals.reb,  fmt: (d) => d.totals.reb + " REB",  accent: "#f97316" },
@@ -963,7 +944,7 @@ export default function App() {
                       })}
                     </div>
 
-                    <div className="table-scroll-wrap" style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 32 }}>
+                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, overflow: "auto", marginBottom: 32 }}>
                       <SeasonTable players={sortedSeason} seasonData={seasonData} />
                     </div>
 
@@ -983,7 +964,7 @@ export default function App() {
                               {isAdmin && <button className="ghost-btn" onClick={() => resumeNight(n)}>+ ADD GAMES</button>}
                             </div>
                           </div>
-                          <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", overflowX: "auto" }}>
+                          <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
                             <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
                             <BoxScore players={np} stats={nt} compact />
                           </div>
@@ -1128,7 +1109,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
   const teamAIds = game?.teams.a || [];
   const teamBIds = game?.teams.b || [];
   return (
-    <div style={{ background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+    <div style={{ background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflow: "hidden" }}>
       <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: compact ? 300 : 380 }}>
         <span style={{ textAlign: "left" }}>PLAYER</span>
         <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span>
@@ -1174,61 +1155,15 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
 
 function SeasonTable({ players, seasonData }) {
   const cols = "1fr 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
-  const [sortKey, setSortKey] = useState("pts");
-  const [sortAsc, setSortAsc] = useState(false);
-  const handleSort = (key) => {
-    if (sortKey === key) setSortAsc((a) => !a);
-    else { setSortKey(key); setSortAsc(false); }
-  };
-  const COLS = [
-    { key: "player", label: "PLAYER", align: "left",  getValue: (d, p) => p.name },
-    { key: "ngt",    label: "NGT",    align: "right", getValue: (d)    => d.nights },
-    { key: "gp",     label: "GP",     align: "right", getValue: (d)    => d.gp },
-    { key: "pts",    label: "PTS",    align: "right", getValue: (d)    => pts(d.totals) },
-    { key: "fgpct",  label: "FG%",    align: "right", getValue: (d)    => d.totals.fga > 0 ? d.totals.fgm / d.totals.fga : -1 },
-    { key: "reb",    label: "REB",    align: "right", getValue: (d)    => d.totals.reb },
-    { key: "ast",    label: "AST",    align: "right", getValue: (d)    => d.totals.ast },
-    { key: "stl",    label: "STL",    align: "right", getValue: (d)    => d.totals.stl },
-    { key: "to",     label: "TO",     align: "right", getValue: (d)    => d.totals.to },
-    { key: "fgm",    label: "FGM",    align: "right", getValue: (d)    => d.totals.fgm },
-    { key: "wl",     label: "W-L",    align: "right", getValue: (d)    => d.w - d.l },
-    { key: "winpct", label: "WIN%",   align: "right", getValue: (d)    => (d.w + d.l) > 0 ? d.w / (d.w + d.l) : -1 },
-  ];
-  const activeSortCol = COLS.find((c) => c.key === sortKey);
-  const sortedPlayers = [...players].sort((a, b) => {
-    const da = seasonData[a.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
-    const db = seasonData[b.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
-    if (da.nights === 0 && db.nights !== 0) return 1;
-    if (da.nights !== 0 && db.nights === 0) return -1;
-    const va = activeSortCol.getValue(da, a);
-    const vb = activeSortCol.getValue(db, b);
-    const cmp = typeof va === "string" ? va.localeCompare(vb) : va - vb;
-    return sortAsc ? cmp : -cmp;
-  });
   return (
     <>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
-        {COLS.map((c) => {
-          const isActive = sortKey === c.key;
-          const isGreen  = c.key === "wl" || c.key === "winpct";
-          const arrow    = isActive ? (sortAsc ? " ▲" : " ▼") : "";
-          return (
-            <span
-              key={c.key}
-              onClick={() => handleSort(c.key)}
-              style={{
-                textAlign: c.align,
-                cursor: "pointer",
-                color: isActive ? "#f97316" : isGreen ? "#22c55e" : "#555",
-                userSelect: "none",
-              }}
-            >
-              {c.label}{arrow}
-            </span>
-          );
-        })}
+      <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#555", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
+        <span style={{ textAlign: "left" }}>PLAYER</span>
+        <span>NGT</span><span>GP</span><span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>TO</span><span>FGM</span>
+        <span style={{ color: "#22c55e" }}>W-L</span>
+        <span style={{ color: "#22c55e" }}>WIN%</span>
       </div>
-      {sortedPlayers.map((p, i) => {
+      {players.map((p, i) => {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
         const p_ = pts(d.totals);
         const dim = d.nights === 0;
