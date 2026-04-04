@@ -593,8 +593,8 @@ export default function App() {
       {/* Header */}
       <div style={{ borderBottom: "1px solid #1a1d22", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100, flexWrap: "wrap", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🏀</span>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>HOOPS TRACKER</span>
+          <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <nav style={{ display: "flex", gap: 4 }}>
@@ -922,7 +922,7 @@ export default function App() {
                   <div style={{ textAlign: "center", padding: 80, color: "#333", border: "1px dashed #1e2128", borderRadius: 8, fontFamily: "'DM Sans'", fontSize: 14 }}>No nights recorded yet</div>
                 ) : (
                   <>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 28 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 10, marginBottom: 28 }}>
                       {[
                         { label: "POINTS LEADER",  val: (d) => pts(d.totals), fmt: (d) => pts(d.totals) + " PTS", accent: "#f97316" },
                         { label: "REBOUND LEADER", val: (d) => d.totals.reb,  fmt: (d) => d.totals.reb + " REB",  accent: "#f97316" },
@@ -944,7 +944,7 @@ export default function App() {
                       })}
                     </div>
 
-                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, overflow: "auto", marginBottom: 32 }}>
+                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, overflowX: "auto", marginBottom: 32, WebkitOverflowScrolling: "touch" }}>
                       <SeasonTable players={sortedSeason} seasonData={seasonData} />
                     </div>
 
@@ -966,7 +966,9 @@ export default function App() {
                           </div>
                           <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
                             <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
-                            <BoxScore players={np} stats={nt} compact />
+                            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                              <BoxScore players={np} stats={nt} compact />
+                            </div>
                           </div>
                           <div style={{ padding: "12px 16px" }}>
                             <div className="section-label" style={{ marginBottom: 10 }}>PER GAME</div>
@@ -1098,7 +1100,7 @@ function PlayerCard({ player, stats, team, onLog }) {
 // ─── BoxScore ─────────────────────────────────────────────────────────────────
 
 function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
-  const cols = compact ? "1fr 40px 44px 44px 40px 40px" : "1fr 44px 44px 44px 40px 40px 40px 40px";
+  const cols = compact ? "140px 40px 44px 44px 40px 40px" : "140px 44px 44px 44px 40px 40px 40px 40px";
   const sortedPlayers = game && (game.teams.a.length > 0 || game.teams.b.length > 0)
     ? [
         ...players.filter((p) => game.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)),
@@ -1110,7 +1112,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
   const teamBIds = game?.teams.b || [];
   return (
     <div style={{ background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflow: "hidden" }}>
-      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: compact ? 300 : 380 }}>
+      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: compact ? 280 : 360 }}>
         <span style={{ textAlign: "left" }}>PLAYER</span>
         <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span>
         {!compact && <><span>STL</span><span>TO</span><span>FGM/A</span></>}
@@ -1127,7 +1129,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
           <React.Fragment key={p.id}>
             {showDivider && <div style={{ height: 1, background: "#2a2d35", margin: "0 12px" }} />}
             <div onClick={() => onSelect && onSelect(p.id)}
-              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: compact ? 300 : 380 }}>
+              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: compact ? 280 : 360 }}>
               <span style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}>
                 {team === "a" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#3b82f6", flexShrink: 0 }} />}
                 {team === "b" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#22c55e", flexShrink: 0 }} />}
@@ -1154,7 +1156,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData }) {
-  const cols = "1fr 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 44px 44px 44px 44px 52px 52px";
   return (
     <>
       <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#555", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 720 }}>
