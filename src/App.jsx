@@ -1318,6 +1318,7 @@ function AveragesTable({ players, seasonData }) {
       tpg:  gp > 0 ? t.to  / gp  : 0,
       fgpct: t.fga > 0 ? t.fgm / t.fga : 0,
       fg3pct: t.pts3 > 0 || (t.fga - t.fgm) >= 0 ? (t.pts3 / Math.max(t.pts3 + (t.fga - t.fgm - (t.pts2 || 0)), 1)) : 0,
+      winpct: (d.w + d.l) > 0 ? d.w / (d.w + d.l) : 0,
     };
   };
 
@@ -1344,7 +1345,7 @@ function AveragesTable({ players, seasonData }) {
     );
   };
 
-  const cols = "140px 44px 52px 52px 52px 52px 52px 52px";
+  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px";
   const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
   const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
 
@@ -1359,6 +1360,7 @@ function AveragesTable({ players, seasonData }) {
         <ColHeader col="spg"  label="SPG" />
         <ColHeader col="tpg"  label="TPG" />
         <ColHeader col="fgpct" label="FG%" />
+        <ColHeader col="winpct" label="WIN%" color="#22c55e" />
       </div>
       {sorted.map((p, i) => {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0 };
@@ -1375,6 +1377,9 @@ function AveragesTable({ players, seasonData }) {
             <span style={{ color: "#888" }}>{fmt(a.spg)}</span>
             <span style={{ color: a.tpg > 0 ? "#888" : "#333" }}>{fmt(a.tpg)}</span>
             <span style={{ color: "#888" }}>{fmtPct(a.fgpct)}</span>
+            <span style={{ color: (d.w + d.l) === 0 ? "#333" : a.winpct >= 0.6 ? "#86efac" : a.winpct <= 0.4 ? "#fca5a5" : "#888" }}>
+              {(d.w + d.l) === 0 ? "—" : fmtPct(a.winpct)}
+            </span>
           </div>
         );
       })}
