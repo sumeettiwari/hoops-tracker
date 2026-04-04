@@ -511,11 +511,13 @@ export default function App() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative", display: "flex", flexDirection: "column", alignItems: "stretch" }}>
+    <div style={{ minHeight: "100vh", background: "#0a0c0f", color: "#e8e4d9", fontFamily: "'Bebas Neue', sans-serif", position: "relative", width: "100%" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { background: #0a0c0f; }
+        html, body { background: #0a0c0f; width: 100%; }
+        #root { width: 100%; }
+        .centered { max-width: 960px; margin-left: auto; margin-right: auto; padding-left: 16px; padding-right: 16px; width: 100%; }
         @media (max-width: 640px) {
           .nav-btn { padding: 8px 8px; font-size: 12px; letter-spacing: 1px; }
           .primary-btn { font-size: 14px; padding: 10px 16px; }
@@ -627,7 +629,7 @@ export default function App() {
 
       {/* Header */}
       <div style={{ borderBottom: "1px solid #1a1d22", position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100, width: "100%" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, flexWrap: "wrap", gap: 4, width: "100%", boxSizing: "border-box" }}>
+        <div className="centered" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56, flexWrap: "wrap", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
             <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span>
@@ -654,7 +656,7 @@ export default function App() {
       {view === "login" && <Login onLogin={() => setView("roster")} />}
 
       {view !== "login" && (
-        <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px", width: "100%", boxSizing: "border-box", display: "block" }}>
+        <div className="centered" style={{ paddingTop: 24, paddingBottom: 24 }}>
 
           {loading ? (
             <div style={{ textAlign: "center", padding: 80, color: "#333", fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 4 }}>LOADING DATA...</div>
