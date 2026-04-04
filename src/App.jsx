@@ -890,7 +890,9 @@ export default function App() {
                         )}
                         <div style={{ marginTop: 8 }}>
                           <div className="section-label">GAME {curGame.number} BOX SCORE</div>
-                          <BoxScore players={curGamePlayers} stats={curGame.stats} activePid={null} game={curGame} />
+                          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                            <BoxScore players={curGamePlayers} stats={curGame.stats} activePid={null} game={curGame} />
+                          </div>
                         </div>
                       </div>
                     )}
@@ -962,11 +964,15 @@ export default function App() {
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                           <div>
                             <div className="section-label">GAME {curGame.number} BOX SCORE</div>
-                            <BoxScore players={curGamePlayers} stats={curGame.stats} activePid={activePid} onSelect={setActivePid} game={curGame} />
+                            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                              <BoxScore players={curGamePlayers} stats={curGame.stats} activePid={activePid} onSelect={setActivePid} game={curGame} />
+                            </div>
                           </div>
                           <div>
                             <div className="section-label">NIGHT TOTALS ({activeNight.games.length} GAMES)</div>
-                            <BoxScore players={nightGamePlayers} stats={nightTotals} activePid={activePid} onSelect={setActivePid} dim />
+                            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                              <BoxScore players={nightGamePlayers} stats={nightTotals} activePid={activePid} onSelect={setActivePid} dim />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1247,7 +1253,9 @@ function PlayerCard({ player, stats, team, onLog }) {
 // ─── BoxScore ─────────────────────────────────────────────────────────────────
 
 function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
-  const cols = compact ? "140px 40px 44px 44px 40px 40px" : "140px 44px 44px 44px 40px 40px 40px 40px";
+  // compact = night totals: PLAYER, PTS, FG%, REB, AST, STL, TO, FGM/A
+  // full    = in-game box:  same columns
+  const cols = "140px 44px 44px 44px 40px 40px 40px 52px";
   const sortedPlayers = game && (game.teams.a.length > 0 || game.teams.b.length > 0)
     ? [
         ...players.filter((p) => game.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)),
@@ -1259,10 +1267,9 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
   const teamBIds = game?.teams.b || [];
   return (
     <div style={{ background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflow: "hidden" }}>
-      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: compact ? 280 : 360 }}>
+      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 480 }}>
         <span style={{ textAlign: "left" }}>PLAYER</span>
-        <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span>
-        {!compact && <><span>STL</span><span>TO</span><span>FGM/A</span></>}
+        <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>TO</span><span>FGM/A</span>
       </div>
       {sortedPlayers.map((p, i) => {
         const prevP = sortedPlayers[i - 1];
@@ -1276,7 +1283,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
           <React.Fragment key={p.id}>
             {showDivider && <div style={{ height: 1, background: "#2a2d35", margin: "0 12px" }} />}
             <div onClick={() => onSelect && onSelect(p.id)}
-              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: compact ? 280 : 360 }}>
+              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: 480 }}>
               <span style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}>
                 {team === "a" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#3b82f6", flexShrink: 0 }} />}
                 {team === "b" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#22c55e", flexShrink: 0 }} />}
@@ -1287,11 +1294,9 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
               <span style={{ color: "#666" }}>{fgpct(s)}</span>
               <span style={{ color: s.reb > 0 ? "#888" : "#333" }}>{s.reb || "—"}</span>
               <span style={{ color: s.ast > 0 ? "#888" : "#333" }}>{s.ast || "—"}</span>
-              {!compact && <>
-                <span style={{ color: s.stl > 0 ? "#888" : "#333" }}>{s.stl || "—"}</span>
-                <span style={{ color: s.to  > 0 ? "#888" : "#333" }}>{s.to  || "—"}</span>
-                <span style={{ color: "#555", fontSize: 11 }}>{s.fgm}/{s.fga}</span>
-              </>}
+              <span style={{ color: s.stl > 0 ? "#888" : "#333" }}>{s.stl || "—"}</span>
+              <span style={{ color: s.to  > 0 ? "#888" : "#333" }}>{s.to  || "—"}</span>
+              <span style={{ color: "#555", fontSize: 11 }}>{s.fgm}/{s.fga}</span>
             </div>
           </React.Fragment>
         );
