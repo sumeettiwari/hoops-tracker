@@ -274,6 +274,7 @@ export default function App() {
   const [trackMode,    setTrackMode]    = useState("grid");
   const [sortCol,      setSortCol]      = useState("pts");
   const [sortDir,      setSortDir]      = useState("desc");
+  const [expandedNights, setExpandedNights] = useState(new Set());
 
   // ── auth ──
   useEffect(() => {
@@ -1005,66 +1006,80 @@ export default function App() {
                     {nights.map((n) => {
                       const np = players.filter((p) => n.players.includes(p.id));
                       const nt = mergePlayerStats(n);
+                      const isExpanded = expandedNights.has(n.id);
+                      const toggleExpanded = () => setExpandedNights((prev) => {
+                        const next = new Set(prev);
+                        next.has(n.id) ? next.delete(n.id) : next.add(n.id);
+                        return next;
+                      });
                       return (
                         <div key={n.id} style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
-                          <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128", background: "#0f1115", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <div>
-                              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3 }}>{n.date}</span>
-                              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555", marginLeft: 10 }}>{n.games.length} games · {np.length} players</span>
+                          {/* Clickable header */}
+                          <div onClick={toggleExpanded} style={{ padding: "12px 16px", background: "#0f1115", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none", borderBottom: isExpanded ? "1px solid #1e2128" : "none" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
+                              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, flexShrink: 0 }}>{n.date}</span>
+                              <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.games.length} games · {np.length} players</span>
                             </div>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ WATCH</a>}
-                              {isAdmin && <button className="ghost-btn" onClick={() => resumeNight(n)}>+ ADD GAMES</button>}
-                            </div>
-                          </div>
-                          <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
-                            <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
-                            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                              <BoxScore players={np} stats={nt} compact />
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
+                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶</a>}
+                              {isAdmin && <button className="ghost-btn" onClick={(e) => { e.stopPropagation(); resumeNight(n); }}>+ ADD</button>}
+                              <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: "#444", transition: "transform 0.2s", display: "inline-block", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
                             </div>
                           </div>
-                          <div style={{ padding: "12px 16px" }}>
-                            <div className="section-label" style={{ marginBottom: 10 }}>PER GAME</div>
-                            <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
-                              {n.games.map((g, gi) => {
-                                const gp = players.filter((p) => g.teams.a.includes(p.id) || g.teams.b.includes(p.id) || (g.teams.a.length === 0 && n.players.includes(p.id)));
-                                const ht = hasTeams(g);
-                                return (
-                                  <div key={g.id} style={{ minWidth: 170, background: "#0f1115", border: `1px solid ${g.winner ? (g.winner === "a" ? "#3b82f620" : "#22c55e20") : "#1e2128"}`, borderRadius: 6, padding: "10px 12px", flexShrink: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                                      <span style={{ fontFamily: "'Bebas Neue'", fontSize: 13, letterSpacing: 2, color: "#f97316" }}>GAME {g.number}</span>
-                                      {g.winner && <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: g.winner === "a" ? "#93c5fd" : "#86efac" }}>TEAM {g.winner.toUpperCase()} WIN</span>}
-                                    </div>
-                                    {ht && isAdmin && (
-                                      <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-                                        {["a", "b"].map((team) => (
-                                          <button key={team} onClick={() => setWinnerSaved(n.id, gi, team)}
-                                            style={{ flex: 1, fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 1, padding: "4px 0", borderRadius: 3, border: "1px solid", borderColor: g.winner === team ? (team === "a" ? "#3b82f6" : "#22c55e") : "#2a2d35", background: g.winner === team ? (team === "a" ? "#3b82f6" : "#22c55e") : "transparent", color: g.winner === team ? (team === "a" ? "#fff" : "#000") : "#555", cursor: "pointer" }}>
-                                            {team.toUpperCase()} {g.winner === team ? "✓" : ""}
-                                          </button>
-                                        ))}
-                                      </div>
-                                    )}
-                                    {gp.map((p) => {
-                                      const s = g.stats[p.id] || emptyStats();
-                                      const won = playerWon(g, p.id);
-                                      return (
-                                        <div key={p.id} style={{ marginBottom: 5, display: "flex", alignItems: "flex-start", gap: 5 }}>
-                                          {won !== null && <span style={{ fontSize: 9, marginTop: 2, color: won ? "#86efac" : "#fca5a5", flexShrink: 0 }}>{won ? "W" : "L"}</span>}
-                                          <div>
-                                            <div style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 600, color: "#ccc" }}>{p.name}</div>
-                                            <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: "#666" }}>
-                                              <span style={{ color: "#e8e4d9" }}>{pts(s)}</span>pts · {s.fgm}/{s.fga} · {s.reb}r · {s.ast}a
-                                            </div>
-                                          </div>
+
+                          {/* Collapsible body */}
+                          {isExpanded && (
+                            <>
+                              <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
+                                <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
+                                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                                  <BoxScore players={np} stats={nt} compact />
+                                </div>
+                              </div>
+                              <div style={{ padding: "12px 16px" }}>
+                                <div className="section-label" style={{ marginBottom: 10 }}>PER GAME</div>
+                                <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+                                  {n.games.map((g, gi) => {
+                                    const gp = players.filter((p) => g.teams.a.includes(p.id) || g.teams.b.includes(p.id) || (g.teams.a.length === 0 && n.players.includes(p.id)));
+                                    const ht = hasTeams(g);
+                                    return (
+                                      <div key={g.id} style={{ minWidth: 170, background: "#0f1115", border: `1px solid ${g.winner ? (g.winner === "a" ? "#3b82f620" : "#22c55e20") : "#1e2128"}`, borderRadius: 6, padding: "10px 12px", flexShrink: 0 }}>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                                          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 13, letterSpacing: 2, color: "#f97316" }}>GAME {g.number}</span>
+                                          {g.winner && <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: g.winner === "a" ? "#93c5fd" : "#86efac" }}>TEAM {g.winner.toUpperCase()} WIN</span>}
                                         </div>
-                                      );
-                                    })}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                        {ht && isAdmin && (
+                                          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+                                            {["a", "b"].map((team) => (
+                                              <button key={team} onClick={() => setWinnerSaved(n.id, gi, team)}
+                                                style={{ flex: 1, fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 1, padding: "4px 0", borderRadius: 3, border: "1px solid", borderColor: g.winner === team ? (team === "a" ? "#3b82f6" : "#22c55e") : "#2a2d35", background: g.winner === team ? (team === "a" ? "#3b82f6" : "#22c55e") : "transparent", color: g.winner === team ? (team === "a" ? "#fff" : "#000") : "#555", cursor: "pointer" }}>
+                                                {team.toUpperCase()} {g.winner === team ? "✓" : ""}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {gp.map((p) => {
+                                          const s = g.stats[p.id] || emptyStats();
+                                          const won = playerWon(g, p.id);
+                                          return (
+                                            <div key={p.id} style={{ marginBottom: 5, display: "flex", alignItems: "flex-start", gap: 5 }}>
+                                              {won !== null && <span style={{ fontSize: 9, marginTop: 2, color: won ? "#86efac" : "#fca5a5", flexShrink: 0 }}>{won ? "W" : "L"}</span>}
+                                              <div>
+                                                <div style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 600, color: "#ccc" }}>{p.name}</div>
+                                                <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: "#666" }}>
+                                                  <span style={{ color: "#e8e4d9" }}>{pts(s)}</span>pts · {s.fgm}/{s.fga} · {s.reb}r · {s.ast}a
+                                                </div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
                       );
                     })}
