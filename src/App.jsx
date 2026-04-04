@@ -477,7 +477,7 @@ export default function App() {
 
   // Redirect non-admins away from protected views
   useEffect(() => {
-    if (!isAdmin && (view === "roster" || view === "night" || view === "login")) {
+    if (!isAdmin && (view === "roster" || view === "night")) {
       setView("stats");
     }
   }, [isAdmin, view]);
