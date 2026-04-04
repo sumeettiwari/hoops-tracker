@@ -943,27 +943,57 @@ export default function App() {
                   <div style={{ textAlign: "center", padding: 80, color: "#333", border: "1px dashed #1e2128", borderRadius: 8, fontFamily: "'DM Sans'", fontSize: 14 }}>No nights recorded yet</div>
                 ) : (
                   <>
-                    <div style={{ display: "flex", gap: 10, marginBottom: 28, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 4 }}>
-                      {[
-                        { label: "POINTS LEADER",  val: (d) => pts(d.totals), fmt: (d) => pts(d.totals) + " PTS", accent: "#f97316" },
-                        { label: "REBOUND LEADER", val: (d) => d.totals.reb,  fmt: (d) => d.totals.reb + " REB",  accent: "#f97316" },
-                        { label: "ASSIST LEADER",  val: (d) => d.totals.ast,  fmt: (d) => d.totals.ast + " AST",  accent: "#f97316" },
-                        { label: "WIN% LEADER",    val: (d) => (d.w + d.l) >= 3 ? d.w / (d.w + d.l) : -1, fmt: (d) => `${d.w}W-${d.l}L`, accent: "#22c55e" },
-                      ].map(({ label, val, fmt, accent }) => {
-                        const leader = players.filter((p) => (seasonData[p.id]?.nights || 0) > 0)
-                          .sort((a, b) => val(seasonData[b.id] || { totals: emptyStats(), w: 0, l: 0, gp: 0 }) - val(seasonData[a.id] || { totals: emptyStats(), w: 0, l: 0, gp: 0 }))[0];
-                        if (!leader) return null;
-                        const d = seasonData[leader.id];
+                    {(() => {
+                      const sd = seasonData;
+                      const active = players.filter((p) => (sd[p.id]?.nights || 0) > 0);
+                      const best = (valFn) => active.slice().sort((a, b) => valFn(sd[b.id]) - valFn(sd[a.id]))[0];
+
+                      const ptsLeader  = best((d) => pts(d.totals));
+                      const ppgLeader  = best((d) => d.gp > 0 ? pts(d.totals) / d.gp : 0);
+                      const rebLeader  = best((d) => d.totals.reb);
+                      const rpgLeader  = best((d) => d.gp > 0 ? d.totals.reb / d.gp : 0);
+                      const astLeader  = best((d) => d.totals.ast);
+                      const apgLeader  = best((d) => d.gp > 0 ? d.totals.ast / d.gp : 0);
+                      const winLeader  = active.filter((p) => (sd[p.id].w + sd[p.id].l) >= 3)
+                                               .sort((a, b) => (sd[b.id].w / (sd[b.id].w + sd[b.id].l)) - (sd[a.id].w / (sd[a.id].w + sd[a.id].l)))[0];
+
+                      const Card = ({ label, player, stat, accent }) => {
+                        if (!player) return null;
                         return (
-                          <div key={label} style={{ background: "#111318", borderLeft: `3px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "14px 16px", minWidth: 160, flexShrink: 0 }}>
-                            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: accent, marginBottom: 4 }}>{label}</div>
-                            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 20, letterSpacing: 2 }}>{leader.name}</div>
-                            <div style={{ fontFamily: "'DM Mono'", fontSize: 16, color: "#888" }}>{fmt(d)}</div>
-                            {label === "WIN% LEADER" && <div style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555", marginTop: 2 }}>{winpct(d.w, d.l)} win rate</div>}
+                          <div style={{ background: "#111318", borderTop: `2px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 calc(50% - 5px)", minWidth: 0 }}>
+                            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: accent, marginBottom: 4 }}>{label}</div>
+                            <div style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 1, color: "#e8e4d9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{player.name}</div>
+                            <div style={{ fontFamily: "'DM Mono'", fontSize: 14, color: "#888", marginTop: 2 }}>{stat}</div>
                           </div>
                         );
-                      })}
-                    </div>
+                      };
+
+                      const ppgVal  = ppgLeader  ? (pts(sd[ppgLeader.id].totals)  / sd[ppgLeader.id].gp).toFixed(1)  : "—";
+                      const rpgVal  = rpgLeader  ? (sd[rpgLeader.id].totals.reb   / sd[rpgLeader.id].gp).toFixed(1)  : "—";
+                      const apgVal  = apgLeader  ? (sd[apgLeader.id].totals.ast   / sd[apgLeader.id].gp).toFixed(1)  : "—";
+
+                      return (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28 }}>
+                          {/* Points row */}
+                          <Card label="POINTS LEADER"  player={ptsLeader} stat={`${pts(sd[ptsLeader?.id]?.totals || emptyStats())} PTS`} accent="#f97316" />
+                          <Card label="PPG LEADER"     player={ppgLeader} stat={`${ppgVal} PPG`} accent="#f97316" />
+                          {/* Rebounds row */}
+                          <Card label="REBOUND LEADER" player={rebLeader} stat={`${sd[rebLeader?.id]?.totals.reb || 0} REB`} accent="#3b82f6" />
+                          <Card label="RPG LEADER"     player={rpgLeader} stat={`${rpgVal} RPG`} accent="#3b82f6" />
+                          {/* Assists row */}
+                          <Card label="ASSIST LEADER"  player={astLeader} stat={`${sd[astLeader?.id]?.totals.ast || 0} AST`} accent="#a855f7" />
+                          <Card label="APG LEADER"     player={apgLeader} stat={`${apgVal} APG`} accent="#a855f7" />
+                          {/* Win % — full width on its own */}
+                          {winLeader && (
+                            <div style={{ background: "#111318", borderTop: "2px solid #22c55e", border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 100%" }}>
+                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#22c55e", marginBottom: 4 }}>WIN% LEADER</div>
+                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 1, color: "#e8e4d9" }}>{winLeader.name}</div>
+                              <div style={{ fontFamily: "'DM Mono'", fontSize: 14, color: "#888", marginTop: 2 }}>{sd[winLeader.id].w}W–{sd[winLeader.id].l}L · {winpct(sd[winLeader.id].w, sd[winLeader.id].l)} win rate</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 32 }}>
                       <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch", position: "relative" }}>
