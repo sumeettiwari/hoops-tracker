@@ -1247,7 +1247,7 @@ function PlayerCard({ player, stats, team, onLog }) {
           <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>2PT MISS</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>+FGA</span>
         </button>
-        <button onClick={() => { onLog("fga", 1); onLog("pts3a", 1); }}
+        <button onClick={() => { onLog("pts3a", 1); }}
           style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "5px 4px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center" }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#ef444420"; e.currentTarget.style.borderColor = "#ef4444"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
