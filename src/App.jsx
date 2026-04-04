@@ -1048,6 +1048,16 @@ export default function App() {
                       );
                     })()}
 
+                    {/* Averages table */}
+                    <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, marginBottom: 12 }}>SEASON AVERAGES</h2>
+                    <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 24 }}>
+                      <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}>
+                        <AveragesTable players={sortedSeason} seasonData={seasonData} />
+                      </div>
+                    </div>
+
+                    {/* Totals table */}
+                    <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, marginBottom: 12 }}>SEASON TOTALS</h2>
                     <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 32 }}>
                       <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch", position: "relative" }}>
                         <SeasonTable players={sortedSeason} seasonData={seasonData} onSort={(col) => setSortCol(col)} sortCol={sortCol} sortDir={sortDir} setSortDir={setSortDir} setSortCol={setSortCol} />
@@ -1284,6 +1294,88 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
               </>}
             </div>
           </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── AveragesTable ───────────────────────────────────────────────────────────
+
+function AveragesTable({ players, seasonData }) {
+  const [sortCol, setSortCol] = useState("ppg");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const avg = (d) => {
+    const gp = d.gp || 0;
+    const t = d.totals;
+    return {
+      gp,
+      ppg:  gp > 0 ? pts(t) / gp : 0,
+      rpg:  gp > 0 ? t.reb / gp  : 0,
+      apg:  gp > 0 ? t.ast / gp  : 0,
+      spg:  gp > 0 ? t.stl / gp  : 0,
+      tpg:  gp > 0 ? t.to  / gp  : 0,
+      fgpct: t.fga > 0 ? t.fgm / t.fga : 0,
+      fg3pct: t.pts3 > 0 || (t.fga - t.fgm) >= 0 ? (t.pts3 / Math.max(t.pts3 + (t.fga - t.fgm - (t.pts2 || 0)), 1)) : 0,
+    };
+  };
+
+  const sorted = [...players].filter(p => (seasonData[p.id]?.gp || 0) > 0).sort((a, b) => {
+    const da = avg(seasonData[a.id] || { totals: emptyStats(), gp: 0 });
+    const db = avg(seasonData[b.id] || { totals: emptyStats(), gp: 0 });
+    const diff = (db[sortCol] || 0) - (da[sortCol] || 0);
+    return sortDir === "desc" ? diff : -diff;
+  });
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const ColHeader = ({ col, label, color }) => {
+    const active = sortCol === col;
+    const arrow = active ? (sortDir === "desc" ? " ↓" : " ↑") : "";
+    return (
+      <span onClick={() => handleSort(col)}
+        style={{ cursor: "pointer", color: active ? (color || "#f97316") : "#555", userSelect: "none", whiteSpace: "nowrap" }}>
+        {label}{arrow}
+      </span>
+    );
+  };
+
+  const cols = "140px 44px 52px 52px 52px 52px 52px 52px";
+  const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
+  const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
+
+  return (
+    <div style={{ minWidth: 600 }}>
+      <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right" }}>
+        <span style={{ textAlign: "left", color: "#555" }}>PLAYER</span>
+        <ColHeader col="gp"   label="GP" />
+        <ColHeader col="ppg"  label="PPG" />
+        <ColHeader col="rpg"  label="RPG" />
+        <ColHeader col="apg"  label="APG" />
+        <ColHeader col="spg"  label="SPG" />
+        <ColHeader col="tpg"  label="TPG" />
+        <ColHeader col="fgpct" label="FG%" />
+      </div>
+      {sorted.map((p, i) => {
+        const d = seasonData[p.id] || { totals: emptyStats(), gp: 0 };
+        const a = avg(d);
+        return (
+          <div key={p.id} style={{ padding: "10px 16px", borderBottom: "1px solid #0f1115", background: i === 0 ? "rgba(249,115,22,0.04)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
+            <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontWeight: 500, color: i === 0 ? "#f97316" : "#e8e4d9", display: "flex", alignItems: "center", gap: 6 }}>
+              {i === 0 && <span>👑</span>}{p.name}
+            </span>
+            <span style={{ color: "#888" }}>{a.gp}</span>
+            <span style={{ color: a.ppg > 0 ? "#e8e4d9" : "#333", fontWeight: 600 }}>{fmt(a.ppg)}</span>
+            <span style={{ color: "#888" }}>{fmt(a.rpg)}</span>
+            <span style={{ color: "#888" }}>{fmt(a.apg)}</span>
+            <span style={{ color: "#888" }}>{fmt(a.spg)}</span>
+            <span style={{ color: a.tpg > 0 ? "#888" : "#333" }}>{fmt(a.tpg)}</span>
+            <span style={{ color: "#888" }}>{fmtPct(a.fgpct)}</span>
+          </div>
         );
       })}
     </div>
