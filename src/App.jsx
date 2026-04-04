@@ -93,7 +93,7 @@ async function fetchNights() {
   // Fetch all nights with their games, game_players, and player_stats in one go
   const { data: nightRows, error: nightErr } = await supabase
     .from("nights")
-    .select("id, date, youtube_url")
+    .select("id, date, youtube_url, highlight_url")
     .order("date", { ascending: false });
   if (nightErr) throw nightErr;
 
@@ -143,7 +143,7 @@ async function fetchNights() {
         return { id: g.id, number: g.number, winner: g.winner, teams: { a: teamA, b: teamB }, stats };
       });
 
-    return { id: n.id, date: n.date, youtubeUrl: n.youtube_url || "", players: nightPlayerIds, games };
+    return { id: n.id, date: n.date, youtubeUrl: n.youtube_url || "", highlightUrl: n.highlight_url || "", players: nightPlayerIds, games };
   });
 }
 
@@ -176,7 +176,7 @@ async function dbCreateNight(date, youtubeUrl, playerIds) {
       .insert(playerIds.map((pid) => ({ night_id: night.id, player_id: pid })));
     if (npe) throw npe;
   }
-  return { id: night.id, date: night.date, youtubeUrl: night.youtube_url || "", players: playerIds, games: [] };
+  return { id: night.id, date: night.date, youtubeUrl: night.youtube_url || "", highlightUrl: "", players: playerIds, games: [] };
 }
 
 async function dbDeleteNight(id) {
@@ -185,10 +185,10 @@ async function dbDeleteNight(id) {
   if (error) throw error;
 }
 
-async function dbUpdateNightUrl(id, youtubeUrl) {
+async function dbUpdateNightUrl(id, youtubeUrl, highlightUrl) {
   const { error } = await supabase
     .from("nights")
-    .update({ youtube_url: youtubeUrl || null })
+    .update({ youtube_url: youtubeUrl || null, highlight_url: highlightUrl || null })
     .eq("id", id);
   if (error) throw error;
 }
@@ -377,9 +377,9 @@ export default function App() {
     setNights((prev) => prev.filter((n) => n.id !== id));
   }, "Night deleted");
 
-  const updateNightUrl = (id, url) => wrap(async () => {
-    await dbUpdateNightUrl(id, url.trim());
-    setNights((prev) => prev.map((n) => n.id === id ? { ...n, youtubeUrl: url.trim() } : n));
+  const updateNightUrl = (id, youtubeUrl, highlightUrl) => wrap(async () => {
+    await dbUpdateNightUrl(id, youtubeUrl.trim(), highlightUrl.trim());
+    setNights((prev) => prev.map((n) => n.id === id ? { ...n, youtubeUrl: youtubeUrl.trim(), highlightUrl: highlightUrl.trim() } : n));
   }, "Link saved!");
 
   // ── game ──
@@ -1098,7 +1098,8 @@ export default function App() {
                               <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.games.length} games · {np.length} players</span>
                             </div>
                             <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
-                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶</a>}
+                              {n.highlightUrl && <a href={n.highlightUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ PLAY OF THE NIGHT</a>}
+                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ FULL GAME</a>}
                               {isAdmin && <button className="ghost-btn" onClick={(e) => { e.stopPropagation(); resumeNight(n); }}>+ ADD</button>}
                               <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: "#444", transition: "transform 0.2s", display: "inline-block", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
                             </div>
@@ -1108,20 +1109,35 @@ export default function App() {
                           {isExpanded && (
                             <>
                               {isAdmin && (
-                                <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", background: "#0a0c0f", display: "flex", gap: 8, alignItems: "center" }}>
-                                  <input
-                                    defaultValue={n.youtubeUrl || ""}
-                                    placeholder="YouTube URL..."
-                                    id={`yt-${n.id}`}
-                                    style={{ flex: 1, background: "#111318", border: "1px solid #2a2d35", borderRadius: 4, padding: "6px 10px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 12 }}
-                                  />
-                                  <button className="ghost-btn" style={{ flexShrink: 0 }}
-                                    onClick={() => {
-                                      const val = document.getElementById(`yt-${n.id}`)?.value || "";
-                                      updateNightUrl(n.id, val);
-                                    }}>
-                                    SAVE LINK
-                                  </button>
+                                <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", background: "#0a0c0f", display: "flex", flexDirection: "column", gap: 8 }}>
+                                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 2, color: "#555", marginBottom: 4 }}>FULL GAME URL</div>
+                                      <input
+                                        defaultValue={n.youtubeUrl || ""}
+                                        placeholder="YouTube URL..."
+                                        id={`yt-${n.id}`}
+                                        style={{ width: "100%", background: "#111318", border: "1px solid #2a2d35", borderRadius: 4, padding: "6px 10px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 12 }}
+                                      />
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                      <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 2, color: "#555", marginBottom: 4 }}>PLAY OF THE NIGHT URL</div>
+                                      <input
+                                        defaultValue={n.highlightUrl || ""}
+                                        placeholder="Highlight URL..."
+                                        id={`hl-${n.id}`}
+                                        style={{ width: "100%", background: "#111318", border: "1px solid #2a2d35", borderRadius: 4, padding: "6px 10px", color: "#e8e4d9", fontFamily: "'DM Sans'", fontSize: 12 }}
+                                      />
+                                    </div>
+                                    <button className="ghost-btn" style={{ flexShrink: 0, alignSelf: "flex-end" }}
+                                      onClick={() => {
+                                        const ytVal = document.getElementById(`yt-${n.id}`)?.value || "";
+                                        const hlVal = document.getElementById(`hl-${n.id}`)?.value || "";
+                                        updateNightUrl(n.id, ytVal, hlVal);
+                                      }}>
+                                      SAVE LINKS
+                                    </button>
+                                  </div>
                                 </div>
                               )}
                               <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
