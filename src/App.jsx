@@ -523,6 +523,14 @@ export default function App() {
           .primary-btn { font-size: 14px; padding: 10px 16px; }
           .ghost-btn { font-size: 11px; padding: 5px 9px; }
         }
+        /* Desktop: auto-fill grid per team. Mobile: fixed 2-col side by side */
+        .team-grid-desktop { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+        .team-grid-mobile-wrapper { display: none; }
+        @media (max-width: 768px) {
+          .team-grid-desktop { display: none; }
+          .team-grid-mobile-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+          .team-col { display: flex; flex-direction: column; gap: 8px; }
+        }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #111; } ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 2px; }
         button { cursor: pointer; border: none; outline: none; } input { outline: none; }
 
@@ -826,10 +834,27 @@ export default function App() {
                     {/* Grid mode */}
                     {trackMode === "grid" && (
                       <div>
+                        {/* Mobile: Team A left, Team B right. Desktop: auto-fill rows per team */}
+                        {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (
+                          <div className="team-grid-mobile-wrapper">
+                            <div className="team-col">
+                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 4 }}>TEAM A {curGame.winner === "a" && "🏆"}</div>
+                              {players.filter((p) => curGame.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+                                <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="a" onLog={(key, delta) => logStat(p.id, key, delta)} />
+                              ))}
+                            </div>
+                            <div className="team-col">
+                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 4 }}>TEAM B {curGame.winner === "b" && "🏆"}</div>
+                              {players.filter((p) => curGame.teams.b.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+                                <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="b" onLog={(key, delta) => logStat(p.id, key, delta)} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {curGame.teams.a.length > 0 && (
                           <div style={{ marginBottom: 20 }}>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 10 }}>TEAM A {curGame.winner === "a" && "🏆"}</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+                            <div className="team-grid-desktop">
                               {players.filter((p) => curGame.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
                                 <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="a" onLog={(key, delta) => logStat(p.id, key, delta)} />
                               ))}
@@ -839,7 +864,7 @@ export default function App() {
                         {curGame.teams.b.length > 0 && (
                           <div style={{ marginBottom: 20 }}>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 10 }}>TEAM B {curGame.winner === "b" && "🏆"}</div>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+                            <div className="team-grid-desktop">
                               {players.filter((p) => curGame.teams.b.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
                                 <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="b" onLog={(key, delta) => logStat(p.id, key, delta)} />
                               ))}
