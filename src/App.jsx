@@ -612,8 +612,8 @@ export default function App() {
       {/* Header */}
       <div style={{ borderBottom: "1px solid #1a1d22", padding: isMobile ? "0 12px" : "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, background: "#0a0c0f", zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 10 }}>
-          <span style={{ fontSize: 22 }}>🏀</span>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: isMobile ? 16 : 22, letterSpacing: isMobile ? 2 : 3, color: "#f97316" }}>HOOPS TRACKER</span>
+          <img src="/logo.jpg" alt="Brick City Basketball" style={{ height: 38, width: 38, borderRadius: "50%", objectFit: "cover" }} />
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 22, letterSpacing: 3, color: "#f97316" }}>BRICK CITY</span> 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <nav style={{ display: "flex", gap: 4 }}>
