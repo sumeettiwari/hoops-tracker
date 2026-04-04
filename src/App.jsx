@@ -472,6 +472,13 @@ export default function App() {
     notify("Signed out");
   };
 
+  // Redirect non-admins away from protected views
+  useEffect(() => {
+    if (!isAdmin && (view === "roster" || view === "night" || view === "login")) {
+      setView("stats");
+    }
+  }, [isAdmin, view]);
+
   // ── derived ──
   const curGame          = activeNight && activeGame !== null ? activeNight.games[activeGame] : null;
   const curStats         = curGame?.stats[activePid] || emptyStats();
@@ -644,7 +651,10 @@ export default function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <nav style={{ display: "flex", gap: 4 }}>
-              {[{ id: "roster", label: "ROSTER" }, { id: "night", label: "TRACK NIGHT" }, { id: "stats", label: "STATS" }].map(({ id, label }) => (
+              {(isAdmin
+                ? [{ id: "roster", label: "ROSTER" }, { id: "night", label: "TRACK NIGHT" }, { id: "stats", label: "STATS" }]
+                : [{ id: "stats", label: "STATS" }]
+              ).map(({ id, label }) => (
                 <button key={id} className={`nav-btn ${view === id ? "active" : ""}`}
                   onClick={() => { if (id === "night" && !activeNight) { notify("Start a night from Roster"); return; } setView(id); }}>
                   {label}
