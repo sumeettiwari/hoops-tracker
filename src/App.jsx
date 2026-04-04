@@ -1430,6 +1430,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
         <ColHeader col="gp"    label="GP" />
         <ColHeader col="pts"   label="PTS" />
         <ColHeader col="fgpct" label="FG%" />
+        <ColHeader col="fg3pct" label="3P%" />
         <ColHeader col="reb"   label="REB" />
         <ColHeader col="ast"   label="AST" />
         <ColHeader col="stl"   label="STL" />
