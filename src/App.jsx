@@ -1398,7 +1398,7 @@ function AveragesTable({ players, seasonData }) {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0 };
         const a = avg(d);
         return (
-          <div key={p.id} style={{ padding: "10px 16px", borderBottom: "1px solid #0f1115", background: i === 0 ? "rgba(249,115,22,0.04)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
+          <div key={p.id} style={{ padding: "10px 16px", borderBottom: "1px solid #0f1115", background: i === 0 ? "rgba(249,115,22,0.04)" : i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
             <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontWeight: 500, color: i === 0 ? "#f97316" : "#e8e4d9", display: "flex", alignItems: "center", gap: 6 }}>
               {i === 0 && <span>👑</span>}{p.name}
             </span>
@@ -1466,7 +1466,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
         const dim = d.nights === 0;
         const hasWL = (d.w + d.l) > 0;
         return (
-          <div key={p.id} style={{ padding: "11px 16px", borderBottom: "1px solid #0f1115", background: i === 0 && !dim ? "rgba(249,115,22,0.04)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
+          <div key={p.id} style={{ padding: "11px 16px", borderBottom: "1px solid #0f1115", background: i === 0 && !dim ? "rgba(249,115,22,0.04)" : i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
             <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontWeight: 500, color: dim ? "#2a2d35" : i === 0 ? "#f97316" : "#e8e4d9", display: "flex", alignItems: "center", gap: 6 }}>
               {i === 0 && !dim && <span>👑</span>}{p.name}
             </span>
