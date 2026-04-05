@@ -1423,7 +1423,7 @@ function AveragesTable({ players, seasonData }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
-  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 44px 44px 80px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 52px 52px 80px 52px";
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
