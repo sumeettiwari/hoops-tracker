@@ -494,7 +494,7 @@ export default function App() {
     : [];
   const nightTotals  = activeNight ? mergePlayerStats(activeNight) : {};
   const seasonData   = seasonStats(players, nights);
-  const sortedSeason = [...players].sort((a, b) => {
+  const sortedSeason = [...players].filter((p) => !p.name.includes("+1")).sort((a, b) => {
     const da = seasonData[a.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
     const db = seasonData[b.id] || { totals: emptyStats(), gp: 0, nights: 0, w: 0, l: 0 };
     const val = (d) => {
@@ -1013,7 +1013,7 @@ export default function App() {
                   <>
                     {(() => {
                       const sd = seasonData;
-                      const active = players.filter((p) => (sd[p.id]?.nights || 0) > 0);
+                      const active = players.filter((p) => (sd[p.id]?.nights || 0) > 0 && !p.name.includes("+1"));
                       const best = (valFn) => active.slice().sort((a, b) => valFn(sd[b.id]) - valFn(sd[a.id]))[0];
 
                       const ptsLeader  = best((d) => pts(d.totals));
