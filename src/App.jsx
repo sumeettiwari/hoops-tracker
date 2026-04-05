@@ -1482,7 +1482,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
             <span style={{ color: dim ? "#2a2d35" : "#555", fontSize: 11 }}>{dim || !d.totals.fgm ? "—" : `${d.totals.fgm}/${d.totals.fga}`}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.pts3 ? "—" : d.totals.pts3}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.pts3a ? "—" : d.totals.pts3a}</span>
-            <span style={{ color: !hasWL ? "#2a2d35" : "#e8e4d9" }}>
+            <span style={{ color: !hasWL ? "#2a2d35" : "#e8e4d9", whiteSpace: "nowrap" }}>
               {!hasWL ? "—" : <><span style={{ color: "#86efac" }}>{d.w}W</span><span style={{ color: "#555" }}>-</span><span style={{ color: "#fca5a5" }}>{d.l}L</span></>}
             </span>
             <span style={{ color: !hasWL ? "#2a2d35" : d.w / (d.w + d.l) >= 0.6 ? "#86efac" : d.w / (d.w + d.l) <= 0.4 ? "#fca5a5" : "#888" }}>
