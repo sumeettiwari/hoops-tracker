@@ -1066,7 +1066,7 @@ export default function App() {
                     {/* Averages table */}
                     <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, marginBottom: 12 }}>SEASON AVERAGES</h2>
                     <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 24 }}>
-                      <div style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}>
+                      <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                         <AveragesTable players={sortedSeason} seasonData={seasonData} />
                       </div>
                     </div>
@@ -1376,12 +1376,12 @@ function AveragesTable({ players, seasonData }) {
     );
   };
 
-  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px 52px";
+  const cols = "1fr 48px 60px 60px 60px 60px 60px 60px 60px 60px";
   const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
   const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
 
   return (
-    <div style={{ minWidth: 600 }}>
+    <div style={{ minWidth: 560 }}>
       <div style={{ padding: "10px 16px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, display: "grid", gridTemplateColumns: cols, textAlign: "right" }}>
         <span style={{ textAlign: "left", color: "#555" }}>PLAYER</span>
         <ColHeader col="gp"   label="GP" />
@@ -1423,7 +1423,7 @@ function AveragesTable({ players, seasonData }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
-  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 44px 44px 52px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 44px 44px 72px 52px";
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
