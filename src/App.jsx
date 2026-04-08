@@ -538,6 +538,8 @@ export default function App() {
           .nav-btn { padding: 8px 8px; font-size: 12px; letter-spacing: 1px; }
           .primary-btn { font-size: 14px; padding: 10px 16px; }
           .ghost-btn { font-size: 11px; padding: 5px 9px; }
+          .night-header { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+          .night-header-links { margin-left: 0 !important; }
         }
         /* Desktop: auto-fill grid per team. Mobile: fixed 2-col side by side */
         .team-grid-desktop { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
@@ -1092,14 +1094,16 @@ export default function App() {
                       return (
                         <div key={n.id} style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 16, overflow: "hidden" }}>
                           {/* Clickable header */}
-                          <div onClick={toggleExpanded} style={{ padding: "12px 16px", background: "#0f1115", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none", borderBottom: isExpanded ? "1px solid #1e2128" : "none" }}>
+                          <div onClick={toggleExpanded} className="night-header" style={{ padding: "12px 16px", background: "#0f1115", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", userSelect: "none", borderBottom: isExpanded ? "1px solid #1e2128" : "none" }}>
+                            {/* Left: date + game count */}
                             <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 0 }}>
                               <span style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, flexShrink: 0 }}>{n.date}</span>
                               <span style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#555", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.games.length} games · {np.length} players</span>
                             </div>
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
-                              {n.highlightUrl && <a href={n.highlightUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ PLAY OF THE NIGHT</a>}
-                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none" }}>▶ FULL GAME</a>}
+                            {/* Right: links + actions + chevron */}
+                            <div className="night-header-links" style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, marginLeft: 8 }}>
+                              {n.highlightUrl && <a href={n.highlightUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none", whiteSpace: "nowrap" }}>▶ PLAY OF THE NIGHT</a>}
+                              {n.youtubeUrl && <a href={n.youtubeUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ fontFamily: "'DM Mono'", fontSize: 11, color: "#f97316", textDecoration: "none", whiteSpace: "nowrap" }}>▶ FULL GAME</a>}
                               {isAdmin && <button className="ghost-btn" onClick={(e) => { e.stopPropagation(); resumeNight(n); }}>+ ADD</button>}
                               <span style={{ fontFamily: "'DM Mono'", fontSize: 12, color: "#444", transition: "transform 0.2s", display: "inline-block", transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
                             </div>
