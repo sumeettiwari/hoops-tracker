@@ -1146,9 +1146,7 @@ export default function App() {
                               )}
                               <div style={{ padding: "12px 16px", borderBottom: "1px solid #1e2128" }}>
                                 <div className="section-label" style={{ marginBottom: 10 }}>NIGHT TOTALS</div>
-                                <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                                  <BoxScore players={np} stats={nt} compact />
-                                </div>
+                                <NightTotalsTable players={np} stats={nt} />
                               </div>
                               <div style={{ padding: "12px 16px" }}>
                                 <div className="section-label" style={{ marginBottom: 10 }}>PER GAME</div>
@@ -1274,6 +1272,91 @@ function PlayerCard({ player, stats, team, onLog }) {
             -{label}
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── NightTotalsTable ─────────────────────────────────────────────────────────
+
+function NightTotalsTable({ players, stats }) {
+  const [sortCol, setSortCol] = useState("pts");
+  const [sortDir, setSortDir] = useState("desc");
+
+  const handleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
+    else { setSortCol(col); setSortDir("desc"); }
+  };
+
+  const ColHeader = ({ col, label }) => {
+    const active = sortCol === col;
+    const arrow = active ? (sortDir === "desc" ? " ↓" : " ↑") : "";
+    return (
+      <span onClick={() => handleSort(col)}
+        style={{ cursor: "pointer", color: active ? "#f97316" : "#444", userSelect: "none", whiteSpace: "nowrap" }}>
+        {label}{arrow}
+      </span>
+    );
+  };
+
+  const val = (s) => {
+    if (sortCol === "pts")    return pts(s);
+    if (sortCol === "fgpct")  return s.fga > 0 ? s.fgm / s.fga : 0;
+    if (sortCol === "reb")    return s.reb || 0;
+    if (sortCol === "ast")    return s.ast || 0;
+    if (sortCol === "stl")    return s.stl || 0;
+    if (sortCol === "to")     return s.to  || 0;
+    if (sortCol === "fgm")    return s.fgm || 0;
+    if (sortCol === "pts3")   return s.pts3 || 0;
+    if (sortCol === "fg3pct") return (s.pts3a || 0) > 0 ? s.pts3 / s.pts3a : 0;
+    return pts(s);
+  };
+
+  const sorted = [...players].sort((a, b) => {
+    const sa = stats[a.id] || emptyStats();
+    const sb = stats[b.id] || emptyStats();
+    const diff = val(sb) - val(sa);
+    return sortDir === "desc" ? diff : -diff;
+  });
+
+  const cols = "140px 50px 50px 50px 46px 46px 46px 58px 58px 46px";
+
+  return (
+    <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div style={{ minWidth: 620, background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3 }}>
+          <span style={{ textAlign: "left", color: "#444" }}>PLAYER</span>
+          <ColHeader col="pts"    label="PTS" />
+          <ColHeader col="fgpct"  label="FG%" />
+          <ColHeader col="reb"    label="REB" />
+          <ColHeader col="ast"    label="AST" />
+          <ColHeader col="stl"    label="STL" />
+          <ColHeader col="to"     label="TO" />
+          <ColHeader col="fgm"    label="FGM/A" />
+          <ColHeader col="pts3"   label="3PM/A" />
+          <ColHeader col="fg3pct" label="3P%" />
+        </div>
+        {/* Rows */}
+        {sorted.map((p, i) => {
+          const s = stats[p.id] || emptyStats();
+          const p_ = pts(s);
+          const rowBg = i === 0 ? "rgba(249,115,22,0.04)" : i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent";
+          return (
+            <div key={p.id} style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, background: rowBg }}>
+              <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontSize: 12, fontWeight: 500, color: i === 0 ? "#f97316" : "#e8e4d9" }}>{p.name}</span>
+              <span style={{ color: p_ > 0 ? "#e8e4d9" : "#333", fontWeight: 600 }}>{p_ || "—"}</span>
+              <span style={{ color: "#666" }}>{fgpct(s)}</span>
+              <span style={{ color: s.reb > 0 ? "#888" : "#333" }}>{s.reb || "—"}</span>
+              <span style={{ color: s.ast > 0 ? "#888" : "#333" }}>{s.ast || "—"}</span>
+              <span style={{ color: s.stl > 0 ? "#888" : "#333" }}>{s.stl || "—"}</span>
+              <span style={{ color: s.to  > 0 ? "#888" : "#333" }}>{s.to  || "—"}</span>
+              <span style={{ color: "#555", fontSize: 11 }}>{s.fgm}/{s.fga}</span>
+              <span style={{ color: "#555", fontSize: 11 }}>{(s.pts3 || 0) > 0 || (s.pts3a || 0) > 0 ? `${s.pts3 || 0}/${s.pts3a || 0}` : "—"}</span>
+              <span style={{ color: "#666" }}>{(s.pts3a || 0) > 0 ? (((s.pts3 || 0) / s.pts3a) * 100).toFixed(0) + "%" : "—"}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
