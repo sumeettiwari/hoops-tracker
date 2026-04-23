@@ -5,7 +5,7 @@ import Login from "./Login";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-const emptyStats = () => ({ pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to: 0 });
+const emptyStats = () => ({ pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0 });
 const pts     = (s) => (s.pts2 || 0) * 2 + (s.pts3 || 0) * 3;
 const fgpct   = (s) => s.fga > 0 ? ((s.fgm / s.fga) * 100).toFixed(0) + "%" : "—";
 const winpct  = (w, l) => (w + l) === 0 ? "—" : ((w / (w + l)) * 100).toFixed(0) + "%";
@@ -115,7 +115,7 @@ async function fetchNights() {
 
   const { data: statRows, error: statErr } = await supabase
     .from("player_stats")
-    .select("game_id, player_id, pts2, pts3, pts3a, fgm, fga, reb, ast, stl, to_");
+    .select("game_id, player_id, pts2, pts3, pts3a, fgm, fga, reb, ast, stl, blk, to_");
   if (statErr) throw statErr;
 
   // Assemble into the shape the app expects
@@ -135,7 +135,7 @@ async function fetchNights() {
             pts2: r.pts2 || 0, pts3: r.pts3 || 0, pts3a: r.pts3a || 0,
             fgm:  r.fgm  || 0, fga:  r.fga  || 0,
             reb:  r.reb  || 0, ast:  r.ast  || 0,
-            stl:  r.stl  || 0, to:   r.to_  || 0,
+            stl:  r.stl  || 0, blk:  r.blk  || 0, to:   r.to_  || 0,
           };
         });
         // Init stats for any night players not yet in stats
@@ -222,7 +222,7 @@ async function dbCreateGame(nightId, gameNumber, teamA, teamB, playerIds) {
       .from("player_stats")
       .insert(playerIds.map((pid) => ({
         game_id: game.id, player_id: pid,
-        pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, to_: 0,
+        pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, blk: 0, to_: 0,
       })));
     if (se) throw se;
   }
@@ -245,7 +245,7 @@ async function dbUpdateStat(gameId, playerId, statObj) {
       pts2: statObj.pts2, pts3: statObj.pts3, pts3a: statObj.pts3a || 0,
       fgm: statObj.fgm, fga: statObj.fga,
       reb: statObj.reb, ast: statObj.ast,
-      stl: statObj.stl, to_: statObj.to,
+      stl: statObj.stl, blk: statObj.blk || 0, to_: statObj.to,
     });
   if (error) throw error;
 }
@@ -502,6 +502,7 @@ export default function App() {
       if (sortCol === "reb")   return d.totals.reb;
       if (sortCol === "ast")   return d.totals.ast;
       if (sortCol === "stl")   return d.totals.stl;
+      if (sortCol === "blk")   return d.totals.blk || 0;
       if (sortCol === "to")    return d.totals.to;
       if (sortCol === "fgm")   return d.totals.fgm;
       if (sortCol === "fga")   return d.totals.fga;
@@ -1179,7 +1180,7 @@ export default function App() {
                                               <div>
                                                 <div style={{ fontFamily: "'DM Sans'", fontSize: 11, fontWeight: 600, color: "#ccc" }}>{p.name}</div>
                                                 <div style={{ fontFamily: "'DM Mono'", fontSize: 10, color: "#666" }}>
-                                                  <span style={{ color: "#e8e4d9" }}>{pts(s)}</span>pts · {s.fgm}/{s.fga} · {s.reb}r · {s.ast}a
+                                                  <span style={{ color: "#e8e4d9" }}>{pts(s)}</span>pts · {s.fgm}/{s.fga} · {s.reb}r · {s.ast}a{s.blk > 0 ? ` · ${s.blk}blk` : ""}
                                                 </div>
                                               </div>
                                             </div>
@@ -1224,13 +1225,14 @@ function PlayerCard({ player, stats, team, onLog }) {
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+        {/* Row 1: 2PT, 3PT, REB */}
         {[
           { key: "pts2", label: "2PT", sub: `×${s.pts2}` },
           { key: "pts3", label: "3PT", sub: `×${s.pts3}` },
           { key: "reb",  label: "REB", sub: `×${s.reb}`  },
           { key: "ast",  label: "AST", sub: `×${s.ast}`  },
           { key: "stl",  label: "STL", sub: `×${s.stl}`  },
-          { key: "to",   label: "TO",  sub: `×${s.to}`   },
+          { key: "blk",  label: "BLK", sub: `×${s.blk}`  },
         ].map(({ key, label, sub }) => (
           <button key={key} onClick={() => onLog(key, 1)}
             style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "6px 2px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}
@@ -1240,20 +1242,26 @@ function PlayerCard({ player, stats, team, onLog }) {
             <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: "#888", lineHeight: 1 }}>{sub}</span>
           </button>
         ))}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-        <button onClick={() => { onLog("fga", 1); }}
-          style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "5px 4px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center" }}
+        {/* Row 3: TO, 2PT MISS, 3PT MISS */}
+        <button onClick={() => onLog("to", 1)}
+          style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "6px 2px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = teamColor; e.currentTarget.style.borderColor = teamColor; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 13, letterSpacing: 1, lineHeight: 1, color: "#e8e4d9" }}>TO</span>
+          <span style={{ fontFamily: "'DM Mono'", fontSize: 10, color: "#888", lineHeight: 1 }}>×{s.to}</span>
+        </button>
+        <button onClick={() => onLog("fga", 1)}
+          style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "6px 2px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#ef444420"; e.currentTarget.style.borderColor = "#ef4444"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>2PT MISS</span>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, lineHeight: 1, color: "#888" }}>2PT MISS</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>+FGA</span>
         </button>
-        <button onClick={() => { onLog("pts3a", 1); }}
-          style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "5px 4px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center" }}
+        <button onClick={() => onLog("pts3a", 1)}
+          style={{ background: "#1a1d22", border: "1px solid #2a2d35", borderRadius: 5, padding: "6px 2px", cursor: "pointer", transition: "all 0.12s", display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}
           onMouseEnter={(e) => { e.currentTarget.style.background = "#ef444420"; e.currentTarget.style.borderColor = "#ef4444"; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = "#1a1d22"; e.currentTarget.style.borderColor = "#2a2d35"; }}>
-          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, color: "#888" }}>3PT MISS</span>
+          <span style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 1, lineHeight: 1, color: "#888" }}>3PT MISS</span>
           <span style={{ fontFamily: "'DM Mono'", fontSize: 9, color: "#555" }}>+FGA +3PA</span>
         </button>
       </div>
@@ -1262,7 +1270,7 @@ function PlayerCard({ player, stats, team, onLog }) {
         {[
           { key: "pts2", label: "2" }, { key: "pts3", label: "3" }, { key: "pts3a", label: "3PA" },
           { key: "reb", label: "R" }, { key: "ast", label: "A" },
-          { key: "stl", label: "S" }, { key: "to",  label: "T" },
+          { key: "stl", label: "S" }, { key: "blk", label: "B" }, { key: "to",  label: "T" },
           { key: "fga", label: "FGA" }, { key: "fgm", label: "FGM" },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => onLog(key, -1)}
@@ -1305,6 +1313,7 @@ function NightTotalsTable({ players, stats }) {
     if (sortCol === "reb")    return s.reb || 0;
     if (sortCol === "ast")    return s.ast || 0;
     if (sortCol === "stl")    return s.stl || 0;
+    if (sortCol === "blk")    return s.blk || 0;
     if (sortCol === "to")     return s.to  || 0;
     if (sortCol === "fgm")    return s.fgm || 0;
     if (sortCol === "pts3")   return s.pts3 || 0;
@@ -1319,7 +1328,7 @@ function NightTotalsTable({ players, stats }) {
     return sortDir === "desc" ? diff : -diff;
   });
 
-  const cols = "140px 50px 50px 50px 46px 46px 46px 58px 58px 46px";
+  const cols = "140px 50px 50px 50px 46px 46px 46px 46px 58px 58px 46px";
 
   return (
     <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
@@ -1332,6 +1341,7 @@ function NightTotalsTable({ players, stats }) {
           <ColHeader col="reb"    label="REB" />
           <ColHeader col="ast"    label="AST" />
           <ColHeader col="stl"    label="STL" />
+          <ColHeader col="blk"    label="BLK" />
           <ColHeader col="to"     label="TO" />
           <ColHeader col="fgm"    label="FGM/A" />
           <ColHeader col="pts3"   label="3PM/A" />
@@ -1350,6 +1360,7 @@ function NightTotalsTable({ players, stats }) {
               <span style={{ color: s.reb > 0 ? "#888" : "#333" }}>{s.reb || "—"}</span>
               <span style={{ color: s.ast > 0 ? "#888" : "#333" }}>{s.ast || "—"}</span>
               <span style={{ color: s.stl > 0 ? "#888" : "#333" }}>{s.stl || "—"}</span>
+              <span style={{ color: s.blk > 0 ? "#888" : "#333" }}>{s.blk || "—"}</span>
               <span style={{ color: s.to  > 0 ? "#888" : "#333" }}>{s.to  || "—"}</span>
               <span style={{ color: "#555", fontSize: 11 }}>{s.fgm}/{s.fga}</span>
               <span style={{ color: "#555", fontSize: 11 }}>{(s.pts3 || 0) > 0 || (s.pts3a || 0) > 0 ? `${s.pts3 || 0}/${s.pts3a || 0}` : "—"}</span>
@@ -1367,7 +1378,7 @@ function NightTotalsTable({ players, stats }) {
 function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
   // compact = night totals: PLAYER, PTS, FG%, REB, AST, STL, TO, FGM/A
   // full    = in-game box:  same columns
-  const cols = "140px 44px 44px 44px 40px 40px 40px 52px 52px 44px";
+  const cols = "140px 44px 44px 44px 40px 40px 40px 40px 52px 52px 44px";
   const sortedPlayers = game && (game.teams.a.length > 0 || game.teams.b.length > 0)
     ? [
         ...players.filter((p) => game.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)),
@@ -1379,9 +1390,9 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
   const teamBIds = game?.teams.b || [];
   return (
     <div style={{ background: "#0f1115", border: "1px solid #1e2128", borderRadius: 6, overflow: "hidden" }}>
-      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 600 }}>
+      <div style={{ padding: "7px 12px", borderBottom: "1px solid #1e2128", fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#444", display: "grid", gridTemplateColumns: cols, textAlign: "right", minWidth: 650 }}>
         <span style={{ textAlign: "left" }}>PLAYER</span>
-        <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>TO</span><span>FGM/A</span><span>3PM/A</span><span>3P%</span>
+        <span>PTS</span><span>FG%</span><span>REB</span><span>AST</span><span>STL</span><span>BLK</span><span>TO</span><span>FGM/A</span><span>3PM/A</span><span>3P%</span>
       </div>
       {sortedPlayers.map((p, i) => {
         const prevP = sortedPlayers[i - 1];
@@ -1395,7 +1406,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
           <React.Fragment key={p.id}>
             {showDivider && <div style={{ height: 1, background: "#2a2d35", margin: "0 12px" }} />}
             <div onClick={() => onSelect && onSelect(p.id)}
-              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: 600 }}>
+              style={{ padding: "8px 12px", borderBottom: "1px solid #0a0c0f", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 12, cursor: onSelect ? "pointer" : "default", background: isActive ? "rgba(249,115,22,0.06)" : "transparent", transition: "background 0.1s", minWidth: 650 }}>
               <span style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}>
                 {team === "a" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#3b82f6", flexShrink: 0 }} />}
                 {team === "b" && <span style={{ width: 3, height: 12, borderRadius: 2, background: "#22c55e", flexShrink: 0 }} />}
@@ -1407,6 +1418,7 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
               <span style={{ color: s.reb > 0 ? "#888" : "#333" }}>{s.reb || "—"}</span>
               <span style={{ color: s.ast > 0 ? "#888" : "#333" }}>{s.ast || "—"}</span>
               <span style={{ color: s.stl > 0 ? "#888" : "#333" }}>{s.stl || "—"}</span>
+              <span style={{ color: s.blk > 0 ? "#888" : "#333" }}>{s.blk || "—"}</span>
               <span style={{ color: s.to  > 0 ? "#888" : "#333" }}>{s.to  || "—"}</span>
               <span style={{ color: "#555", fontSize: 11 }}>{s.fgm}/{s.fga}</span>
               <span style={{ color: "#555", fontSize: 11 }}>{(s.pts3 || 0) > 0 || (s.pts3a || 0) > 0 ? `${s.pts3 || 0}/${s.pts3a || 0}` : "—"}</span>
@@ -1434,6 +1446,7 @@ function AveragesTable({ players, seasonData }) {
       rpg:  gp > 0 ? t.reb / gp  : 0,
       apg:  gp > 0 ? t.ast / gp  : 0,
       spg:  gp > 0 ? t.stl / gp  : 0,
+      bpg:  gp > 0 ? (t.blk || 0) / gp : 0,
       tpg:  gp > 0 ? t.to  / gp  : 0,
       fgpct: t.fga > 0 ? t.fgm / t.fga : 0,
       fg3pct: t.pts3 > 0 || (t.fga - t.fgm) >= 0 ? (t.pts3 / Math.max(t.pts3 + (t.fga - t.fgm - (t.pts2 || 0)), 1)) : 0,
@@ -1465,7 +1478,7 @@ function AveragesTable({ players, seasonData }) {
     );
   };
 
-  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px 52px";
+  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px 52px 52px";
   const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
   const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
 
@@ -1478,6 +1491,7 @@ function AveragesTable({ players, seasonData }) {
         <ColHeader col="rpg"  label="RPG" />
         <ColHeader col="apg"  label="APG" />
         <ColHeader col="spg"  label="SPG" />
+        <ColHeader col="bpg"  label="BPG" />
         <ColHeader col="tpg"  label="TPG" />
         <ColHeader col="fgpct"  label="FG%" />
         <ColHeader col="fg3pct" label="3P%" />
@@ -1496,6 +1510,7 @@ function AveragesTable({ players, seasonData }) {
             <span style={{ color: "#888" }}>{fmt(a.rpg)}</span>
             <span style={{ color: "#888" }}>{fmt(a.apg)}</span>
             <span style={{ color: "#888" }}>{fmt(a.spg)}</span>
+            <span style={{ color: "#888" }}>{fmt(a.bpg)}</span>
             <span style={{ color: a.tpg > 0 ? "#888" : "#333" }}>{fmt(a.tpg)}</span>
             <span style={{ color: "#888" }}>{fmtPct(a.fgpct)}</span>
             <span style={{ color: "#888" }}>{a.fg3pct > 0 ? fmtPct(a.fg3pct) : "—"}</span>
@@ -1512,7 +1527,7 @@ function AveragesTable({ players, seasonData }) {
 // ─── SeasonTable ──────────────────────────────────────────────────────────────
 
 function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sortDir }) {
-  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 52px 52px 80px 52px";
+  const cols = "140px 40px 44px 50px 44px 44px 52px 44px 44px 44px 44px 44px 44px 52px 52px 80px 52px";
 
   const handleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -1542,6 +1557,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
         <ColHeader col="reb"   label="REB" />
         <ColHeader col="ast"   label="AST" />
         <ColHeader col="stl"   label="STL" />
+        <ColHeader col="blk"   label="BLK" />
         <ColHeader col="to"    label="TO" />
         <ColHeader col="fgm"   label="FGM" />
         <ColHeader col="pts3"  label="3PM" />
@@ -1567,6 +1583,7 @@ function SeasonTable({ players, seasonData, sortCol, setSortDir, setSortCol, sor
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.reb ? "—" : d.totals.reb}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.ast ? "—" : d.totals.ast}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.stl ? "—" : d.totals.stl}</span>
+            <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.blk ? "—" : d.totals.blk}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.to  ? "—" : d.totals.to}</span>
             <span style={{ color: dim ? "#2a2d35" : "#555", fontSize: 11 }}>{dim || !d.totals.fgm ? "—" : `${d.totals.fgm}/${d.totals.fga}`}</span>
             <span style={{ color: dim ? "#2a2d35" : "#888" }}>{dim || !d.totals.pts3 ? "—" : d.totals.pts3}</span>
