@@ -857,6 +857,35 @@ export default function App() {
                     {/* Grid mode */}
                     {trackMode === "grid" && (
                       <div>
+                        {/* Scoreboard — only show when teams are set */}
+                        {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (() => {
+                          const scoreA = players
+                            .filter(p => curGame.teams.a.includes(p.id))
+                            .reduce((sum, p) => sum + pts(curGame.stats[p.id] || emptyStats()), 0);
+                          const scoreB = players
+                            .filter(p => curGame.teams.b.includes(p.id))
+                            .reduce((sum, p) => sum + pts(curGame.stats[p.id] || emptyStats()), 0);
+                          const aWinning = scoreA > scoreB;
+                          const bWinning = scoreB > scoreA;
+                          return (
+                            <div style={{ display: "flex", alignItems: "stretch", gap: 0, marginBottom: 16, background: "#111318", border: "1px solid #1e2128", borderRadius: 10, overflow: "hidden" }}>
+                              {/* Team A */}
+                              <div style={{ flex: 1, padding: "16px 20px", textAlign: "center", background: aWinning ? "rgba(59,130,246,0.08)" : "transparent", borderRight: "1px solid #1e2128" }}>
+                                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 6 }}>TEAM A {curGame.winner === "a" ? "🏆" : ""}</div>
+                                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 64, lineHeight: 1, color: aWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreA}</div>
+                              </div>
+                              {/* Divider / VS */}
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px", background: "#0f1115" }}>
+                                <span style={{ fontFamily: "'Bebas Neue'", fontSize: 14, letterSpacing: 2, color: "#333" }}>VS</span>
+                              </div>
+                              {/* Team B */}
+                              <div style={{ flex: 1, padding: "16px 20px", textAlign: "center", background: bWinning ? "rgba(34,197,94,0.08)" : "transparent", borderLeft: "1px solid #1e2128" }}>
+                                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 6 }}>TEAM B {curGame.winner === "b" ? "🏆" : ""}</div>
+                                <div style={{ fontFamily: "'Bebas Neue'", fontSize: 64, lineHeight: 1, color: bWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreB}</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {/* Mobile: Team A left, Team B right. Desktop: auto-fill rows per team */}
                         {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (
                           <div className="team-grid-mobile-wrapper">
