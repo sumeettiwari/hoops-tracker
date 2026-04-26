@@ -541,6 +541,7 @@ export default function App() {
           .ghost-btn { font-size: 11px; padding: 5px 9px; }
           .night-header { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
           .night-header-links { margin-left: 0 !important; }
+          .leader-card { flex: 1 1 100% !important; }
         }
         /* Desktop: auto-fill grid per team. Mobile: fixed 2-col side by side */
         .team-grid-desktop { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
@@ -1021,20 +1022,27 @@ export default function App() {
 
                       const ptsLeader  = best((d) => pts(d.totals));
                       const ppgLeader  = best((d) => d.gp > 0 ? pts(d.totals) / d.gp : 0);
+                      const ppnLeader  = best((d) => d.nights > 0 ? pts(d.totals) / d.nights : 0);
                       const rebLeader  = best((d) => d.totals.reb);
                       const rpgLeader  = best((d) => d.gp > 0 ? d.totals.reb / d.gp : 0);
+                      const rpnLeader  = best((d) => d.nights > 0 ? d.totals.reb / d.nights : 0);
                       const astLeader  = best((d) => d.totals.ast);
                       const apgLeader  = best((d) => d.gp > 0 ? d.totals.ast / d.gp : 0);
-                      const ppnLeader  = best((d) => d.nights > 0 ? pts(d.totals) / d.nights : 0);
-                      const ppnVal     = ppnLeader ? (pts(sd[ppnLeader.id].totals) / sd[ppnLeader.id].nights).toFixed(1) : "—";
-
+                      const apnLeader  = best((d) => d.nights > 0 ? d.totals.ast / d.nights : 0);
                       const winLeader  = active.filter((p) => (sd[p.id].w + sd[p.id].l) >= 3)
                                                .sort((a, b) => (sd[b.id].w / (sd[b.id].w + sd[b.id].l)) - (sd[a.id].w / (sd[a.id].w + sd[a.id].l)))[0];
+
+                      const ppgVal  = ppgLeader ? (pts(sd[ppgLeader.id].totals) / sd[ppgLeader.id].gp).toFixed(1) : "—";
+                      const ppnVal  = ppnLeader ? (pts(sd[ppnLeader.id].totals) / sd[ppnLeader.id].nights).toFixed(1) : "—";
+                      const rpgVal  = rpgLeader ? (sd[rpgLeader.id].totals.reb  / sd[rpgLeader.id].gp).toFixed(1) : "—";
+                      const rpnVal  = rpnLeader ? (sd[rpnLeader.id].totals.reb  / sd[rpnLeader.id].nights).toFixed(1) : "—";
+                      const apgVal  = apgLeader ? (sd[apgLeader.id].totals.ast  / sd[apgLeader.id].gp).toFixed(1) : "—";
+                      const apnVal  = apnLeader ? (sd[apnLeader.id].totals.ast  / sd[apnLeader.id].nights).toFixed(1) : "—";
 
                       const Card = ({ label, player, stat, accent }) => {
                         if (!player) return null;
                         return (
-                          <div style={{ background: "#111318", borderTop: `2px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 calc(50% - 5px)", minWidth: 0 }}>
+                          <div className="leader-card" style={{ background: "#111318", borderTop: `2px solid ${accent}`, border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 calc(33.33% - 8px)", minWidth: 120 }}>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: accent, marginBottom: 4 }}>{label}</div>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 1, color: "#e8e4d9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{player.name}</div>
                             <div style={{ fontFamily: "'DM Mono'", fontSize: 14, color: "#888", marginTop: 2 }}>{stat}</div>
@@ -1042,25 +1050,21 @@ export default function App() {
                         );
                       };
 
-                      const ppgVal  = ppgLeader  ? (pts(sd[ppgLeader.id].totals)  / sd[ppgLeader.id].gp).toFixed(1)  : "—";
-                      const rpgVal  = rpgLeader  ? (sd[rpgLeader.id].totals.reb   / sd[rpgLeader.id].gp).toFixed(1)  : "—";
-                      const apgVal  = apgLeader  ? (sd[apgLeader.id].totals.ast   / sd[apgLeader.id].gp).toFixed(1)  : "—";
-
                       return (
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 28 }}>
-                          {/* Points row */}
-                          <Card label="POINTS LEADER"  player={ptsLeader} stat={`${pts(sd[ptsLeader?.id]?.totals || emptyStats())} PTS`} accent="#f97316" />
-                          <Card label="PPG LEADER"     player={ppgLeader} stat={`${ppgVal} PPG`} accent="#f97316" />
-                          {/* Rebounds row */}
+                          {/* Points row: POINTS, PPG, PPN */}
+                          <Card label="POINTS LEADER" player={ptsLeader} stat={`${pts(sd[ptsLeader?.id]?.totals || emptyStats())} PTS`} accent="#f97316" />
+                          <Card label="PPG LEADER"    player={ppgLeader} stat={`${ppgVal} PPG`} accent="#f97316" />
+                          <Card label="PPN LEADER"    player={ppnLeader} stat={`${ppnVal} PPN`} accent="#f97316" />
+                          {/* Rebounds row: REB, RPG, RPN */}
                           <Card label="REBOUND LEADER" player={rebLeader} stat={`${sd[rebLeader?.id]?.totals.reb || 0} REB`} accent="#3b82f6" />
                           <Card label="RPG LEADER"     player={rpgLeader} stat={`${rpgVal} RPG`} accent="#3b82f6" />
-                          {/* Assists row */}
-                          <Card label="ASSIST LEADER"  player={astLeader} stat={`${sd[astLeader?.id]?.totals.ast || 0} AST`} accent="#a855f7" />
-                          <Card label="APG LEADER"     player={apgLeader} stat={`${apgVal} APG`} accent="#a855f7" />
-                          {/* Points per night */}
-                          <Card label="PPN LEADER" player={ppnLeader} stat={`${ppnVal} PPN`} accent="#f97316" />
-                          <div style={{ flex: "1 1 calc(50% - 5px)", minWidth: 0 }} />{/* spacer to keep grid aligned */}
-                          {/* Win % — full width on its own */}
+                          <Card label="RPN LEADER"     player={rpnLeader} stat={`${rpnVal} RPN`} accent="#3b82f6" />
+                          {/* Assists row: AST, APG, APN */}
+                          <Card label="ASSIST LEADER" player={astLeader} stat={`${sd[astLeader?.id]?.totals.ast || 0} AST`} accent="#a855f7" />
+                          <Card label="APG LEADER"    player={apgLeader} stat={`${apgVal} APG`} accent="#a855f7" />
+                          <Card label="APN LEADER"    player={apnLeader} stat={`${apnVal} APN`} accent="#a855f7" />
+                          {/* Win % — full width */}
                           {winLeader && (
                             <div style={{ background: "#111318", borderTop: "2px solid #22c55e", border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 100%" }}>
                               <div style={{ fontFamily: "'Bebas Neue'", fontSize: 10, letterSpacing: 3, color: "#22c55e", marginBottom: 4 }}>WIN% LEADER</div>
