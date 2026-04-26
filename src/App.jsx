@@ -1025,6 +1025,9 @@ export default function App() {
                       const rpgLeader  = best((d) => d.gp > 0 ? d.totals.reb / d.gp : 0);
                       const astLeader  = best((d) => d.totals.ast);
                       const apgLeader  = best((d) => d.gp > 0 ? d.totals.ast / d.gp : 0);
+                      const ppnLeader  = best((d) => d.nights > 0 ? pts(d.totals) / d.nights : 0);
+                      const ppnVal     = ppnLeader ? (pts(sd[ppnLeader.id].totals) / sd[ppnLeader.id].nights).toFixed(1) : "—";
+
                       const winLeader  = active.filter((p) => (sd[p.id].w + sd[p.id].l) >= 3)
                                                .sort((a, b) => (sd[b.id].w / (sd[b.id].w + sd[b.id].l)) - (sd[a.id].w / (sd[a.id].w + sd[a.id].l)))[0];
 
@@ -1054,6 +1057,9 @@ export default function App() {
                           {/* Assists row */}
                           <Card label="ASSIST LEADER"  player={astLeader} stat={`${sd[astLeader?.id]?.totals.ast || 0} AST`} accent="#a855f7" />
                           <Card label="APG LEADER"     player={apgLeader} stat={`${apgVal} APG`} accent="#a855f7" />
+                          {/* Points per night */}
+                          <Card label="PPN LEADER" player={ppnLeader} stat={`${ppnVal} PPN`} accent="#f97316" />
+                          <div style={{ flex: "1 1 calc(50% - 5px)", minWidth: 0 }} />{/* spacer to keep grid aligned */}
                           {/* Win % — full width on its own */}
                           {winLeader && (
                             <div style={{ background: "#111318", borderTop: "2px solid #22c55e", border: "1px solid #1e2128", borderRadius: 8, padding: "12px 14px", flex: "1 1 100%" }}>
@@ -1070,7 +1076,7 @@ export default function App() {
                     <h2 style={{ fontFamily: "'Bebas Neue'", fontSize: 18, letterSpacing: 3, marginBottom: 12 }}>SEASON AVERAGES</h2>
                     <div style={{ background: "#111318", border: "1px solid #1e2128", borderRadius: 8, marginBottom: 24 }}>
                       <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                        <AveragesTable players={sortedSeason} seasonData={seasonData} />
+                        <AveragesTable players={sortedSeason} seasonData={seasonData} nights={nights} />
                       </div>
                     </div>
 
@@ -1433,20 +1439,42 @@ function BoxScore({ players, stats, activePid, onSelect, game, dim, compact }) {
 
 // ─── AveragesTable ───────────────────────────────────────────────────────────
 
-function AveragesTable({ players, seasonData }) {
+const BLK_TRACKING_START = "2026-04-21";
+
+function AveragesTable({ players, seasonData, nights }) {
   const [sortCol, setSortCol] = useState("ppg");
   const [sortDir, setSortDir] = useState("desc");
 
-  const avg = (d) => {
+  // Compute per-player GP for blocks era only (nights >= BLK_TRACKING_START)
+  const blkGpMap = {};
+  if (nights) {
+    nights.forEach((night) => {
+      if (night.date >= BLK_TRACKING_START) {
+        night.games.forEach((g) => {
+          const hasTeams = g.teams.a.length > 0 || g.teams.b.length > 0;
+          Object.keys(g.stats).forEach((pid) => {
+            const onTeam = g.teams.a.includes(pid) || g.teams.b.includes(pid);
+            if (!hasTeams || onTeam) {
+              blkGpMap[pid] = (blkGpMap[pid] || 0) + 1;
+            }
+          });
+        });
+      }
+    });
+  }
+
+  const avg = (d, pid) => {
     const gp = d.gp || 0;
+    const blkGp = blkGpMap[pid] || 0;
     const t = d.totals;
     return {
       gp,
       ppg:  gp > 0 ? pts(t) / gp : 0,
+      ppn:  (d.nights || 0) > 0 ? pts(t) / d.nights : 0,
       rpg:  gp > 0 ? t.reb / gp  : 0,
       apg:  gp > 0 ? t.ast / gp  : 0,
       spg:  gp > 0 ? t.stl / gp  : 0,
-      bpg:  gp > 0 ? (t.blk || 0) / gp : 0,
+      bpg:  blkGp > 0 ? (t.blk || 0) / blkGp : 0,
       tpg:  gp > 0 ? t.to  / gp  : 0,
       fgpct: t.fga > 0 ? t.fgm / t.fga : 0,
       fg3pct: t.pts3 > 0 || (t.fga - t.fgm) >= 0 ? (t.pts3 / Math.max(t.pts3 + (t.fga - t.fgm - (t.pts2 || 0)), 1)) : 0,
@@ -1456,8 +1484,8 @@ function AveragesTable({ players, seasonData }) {
   };
 
   const sorted = [...players].filter(p => (seasonData[p.id]?.gp || 0) > 0).sort((a, b) => {
-    const da = avg(seasonData[a.id] || { totals: emptyStats(), gp: 0 });
-    const db = avg(seasonData[b.id] || { totals: emptyStats(), gp: 0 });
+    const da = avg(seasonData[a.id] || { totals: emptyStats(), gp: 0 }, a.id);
+    const db = avg(seasonData[b.id] || { totals: emptyStats(), gp: 0 }, b.id);
     const diff = (db[sortCol] || 0) - (da[sortCol] || 0);
     return sortDir === "desc" ? diff : -diff;
   });
@@ -1478,7 +1506,7 @@ function AveragesTable({ players, seasonData }) {
     );
   };
 
-  const cols = "140px 44px 52px 52px 52px 52px 52px 52px 52px 52px 52px";
+  const cols = "140px 44px 52px 64px 52px 52px 52px 52px 52px 52px 52px 52px";
   const fmt = (v) => v === 0 ? "—" : v.toFixed(1);
   const fmtPct = (v) => v === 0 ? "—" : (v * 100).toFixed(0) + "%";
 
@@ -1488,6 +1516,7 @@ function AveragesTable({ players, seasonData }) {
         <span style={{ textAlign: "left", color: "#555" }}>PLAYER</span>
         <ColHeader col="gp"   label="GP" />
         <ColHeader col="ppg"  label="PPG" />
+        <ColHeader col="ppn"  label="PPN" />
         <ColHeader col="rpg"  label="RPG" />
         <ColHeader col="apg"  label="APG" />
         <ColHeader col="spg"  label="SPG" />
@@ -1499,7 +1528,7 @@ function AveragesTable({ players, seasonData }) {
       </div>
       {sorted.map((p, i) => {
         const d = seasonData[p.id] || { totals: emptyStats(), gp: 0 };
-        const a = avg(d);
+        const a = avg(d, p.id);
         return (
           <div key={p.id} style={{ padding: "10px 16px", borderBottom: "1px solid #0f1115", background: i === 0 ? "rgba(249,115,22,0.04)" : i % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent", display: "grid", gridTemplateColumns: cols, textAlign: "right", fontFamily: "'DM Mono'", fontSize: 13 }}>
             <span style={{ textAlign: "left", fontFamily: "'DM Sans'", fontWeight: 500, color: i === 0 ? "#f97316" : "#e8e4d9", display: "flex", alignItems: "center", gap: 6 }}>
@@ -1507,6 +1536,7 @@ function AveragesTable({ players, seasonData }) {
             </span>
             <span style={{ color: "#888" }}>{a.gp}</span>
             <span style={{ color: a.ppg > 0 ? "#e8e4d9" : "#333", fontWeight: 600 }}>{fmt(a.ppg)}</span>
+            <span style={{ color: a.ppn > 0 ? "#e8e4d9" : "#333" }}>{fmt(a.ppn)}</span>
             <span style={{ color: "#888" }}>{fmt(a.rpg)}</span>
             <span style={{ color: "#888" }}>{fmt(a.apg)}</span>
             <span style={{ color: "#888" }}>{fmt(a.spg)}</span>
