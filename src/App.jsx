@@ -258,6 +258,41 @@ async function dbSetWinner(gameId, winner) {
   if (error) throw error;
 }
 
+async function dbUpdateGameTeams(gameId, nightId, teamA, teamB, allNightPlayerIds) {
+  // Delete all existing game_players for this game and re-insert
+  const { error: delErr } = await supabase.from("game_players").delete().eq("game_id", gameId);
+  if (delErr) throw delErr;
+
+  const inserts = [
+    ...teamA.map((pid) => ({ game_id: gameId, player_id: pid, team: "a" })),
+    ...teamB.map((pid) => ({ game_id: gameId, player_id: pid, team: "b" })),
+  ];
+  const assigned = new Set([...teamA, ...teamB]);
+  allNightPlayerIds.forEach((pid) => {
+    if (!assigned.has(pid)) inserts.push({ game_id: gameId, player_id: pid, team: null });
+  });
+  if (inserts.length > 0) {
+    const { error: insErr } = await supabase.from("game_players").insert(inserts);
+    if (insErr) throw insErr;
+  }
+
+  // Also ensure player_stats rows exist for any newly added players
+  const { data: existingStats } = await supabase
+    .from("player_stats")
+    .select("player_id")
+    .eq("game_id", gameId);
+  const existingPids = new Set((existingStats || []).map((r) => r.player_id));
+  const missingStats = allNightPlayerIds.filter((pid) => !existingPids.has(pid));
+  if (missingStats.length > 0) {
+    await supabase.from("player_stats").insert(
+      missingStats.map((pid) => ({
+        game_id: gameId, player_id: pid,
+        pts2: 0, pts3: 0, pts3a: 0, fgm: 0, fga: 0, reb: 0, ast: 0, stl: 0, blk: 0, to_: 0,
+      }))
+    );
+  }
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -277,6 +312,7 @@ export default function App() {
   const [nightUrl,     setNightUrl]     = useState("");
   const [nightPlayers, setNightPlayers] = useState(new Set());
   const [teamSetup,    setTeamSetup]    = useState(false);
+  const [editGameModal, setEditGameModal] = useState(false);
   const [teamA,        setTeamA]        = useState(new Set());
   const [teamB,        setTeamB]        = useState(new Set());
   const [trackMode,    setTrackMode]    = useState("grid");
@@ -384,6 +420,39 @@ export default function App() {
 
   // ── game ──
   const openTeamSetup = () => { setTeamA(new Set()); setTeamB(new Set()); setTeamSetup(true); };
+
+  const openEditGame = () => {
+    if (!curGame) return;
+    setTeamA(new Set(curGame.teams.a));
+    setTeamB(new Set(curGame.teams.b));
+    setEditGameModal(true);
+  };
+
+  const saveEditGame = () => wrap(async () => {
+    if (!curGame || !activeNight) return;
+    const newTeamA = [...teamA];
+    const newTeamB = [...teamB];
+    await dbUpdateGameTeams(curGame.id, activeNight.id, newTeamA, newTeamB, activeNight.players);
+    setActiveNight((n) => {
+      const games = [...n.games];
+      const g = { ...games[activeGame] };
+      g.teams = { a: newTeamA, b: newTeamB };
+      // Ensure stats exist for all night players
+      const stats = { ...g.stats };
+      activeNight.players.forEach((pid) => { if (!stats[pid]) stats[pid] = emptyStats(); });
+      g.stats = stats;
+      games[activeGame] = g;
+      return { ...n, games };
+    });
+    setNights((prev) => prev.map((n) => {
+      if (n.id !== activeNight.id) return n;
+      const games = [...n.games];
+      games[activeGame] = { ...games[activeGame], teams: { a: newTeamA, b: newTeamB } };
+      return { ...n, games };
+    }));
+    setEditGameModal(false);
+    setTeamA(new Set()); setTeamB(new Set());
+  }, "Game updated!");
 
   const startGame = () => wrap(async () => {
     const game = await dbCreateGame(
@@ -618,6 +687,45 @@ export default function App() {
       {notif && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: "#f97316", color: "#000", padding: "10px 24px", borderRadius: 4, fontFamily: "'Bebas Neue'", letterSpacing: 2, fontSize: 15, zIndex: 9999, animation: "slideIn 0.2s ease", boxShadow: "0 4px 24px rgba(249,115,22,0.4)" }}>{notif}</div>}
       {saving && <div style={{ position: "fixed", bottom: 16, right: 16, background: "#1a1d22", border: "1px solid #2a2d35", color: "#555", padding: "6px 14px", borderRadius: 4, fontFamily: "'DM Mono'", fontSize: 11, zIndex: 9999 }}>saving...</div>}
 
+      {/* Edit Game Modal */}
+      {editGameModal && curGame && activeNight && (
+        <div className="modal-overlay" style={{ animation: "fadeIn 0.15s ease" }}>
+          <div className="modal">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <span style={{ fontFamily: "'Bebas Neue'", fontSize: 24, letterSpacing: 3 }}>EDIT GAME {curGame.number} — TEAMS</span>
+              <button className="danger-btn" onClick={() => { setEditGameModal(false); setTeamA(new Set()); setTeamB(new Set()); }}>✕</button>
+            </div>
+            <p style={{ fontFamily: "'DM Sans'", fontSize: 13, color: "#666", marginBottom: 20 }}>
+              Reassign players to teams, or add missing players. Players on this night but not assigned to a team will still have their stats tracked.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+              {[
+                { label: "TEAM A", color: "#3b82f6", cls: "team-a", state: teamA, other: teamB, set: setTeamA },
+                { label: "TEAM B", color: "#22c55e", cls: "team-b", state: teamB, other: teamA, set: setTeamB },
+              ].map(({ label, color, cls, state, other, set }) => (
+                <div key={label}>
+                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 13, letterSpacing: 3, color, marginBottom: 8 }}>{label} ({state.size})</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                    {sortedPlayers.filter((p) => activeNight.players.includes(p.id)).map((p) => (
+                      <button key={p.id}
+                        className={`roster-chip ${state.has(p.id) ? cls : other.has(p.id) ? (cls === "team-a" ? "team-b" : "team-a") : ""}`}
+                        style={{ opacity: other.has(p.id) ? 0.3 : 1 }}
+                        onClick={() => { if (other.has(p.id)) return; set((prev) => { const n = new Set(prev); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; }); }}>
+                        <span>{p.name}</span>{state.has(p.id) && <span style={{ fontSize: 11 }}>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button className="primary-btn" onClick={saveEditGame}>SAVE CHANGES ✓</button>
+              <button className="ghost-btn" onClick={() => { setTeamA(new Set()); setTeamB(new Set()); }}>CLEAR TEAMS</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Team Setup Modal */}
       {teamSetup && activeNight && (
         <div className="modal-overlay" style={{ animation: "fadeIn 0.15s ease" }}>
@@ -816,6 +924,7 @@ export default function App() {
                       );
                     })}
                     <div className="divider" />
+                    {curGame && <button className="ghost-btn" style={{ fontSize: 11 }} onClick={openEditGame}>✎ EDIT TEAMS</button>}
                     {curGame && <button className="danger-btn" onClick={() => deleteGame(activeGame)}>REMOVE</button>}
                   </div>
                 )}
