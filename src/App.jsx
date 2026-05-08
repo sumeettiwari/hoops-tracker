@@ -486,7 +486,11 @@ export default function App() {
   }, "Game removed");
 
   // logStat — update local state immediately (optimistic), then persist
+  // Capture gameId at call time to avoid stale closure over activeNight/activeGame
   const logStat = (pid, key, delta = 1) => {
+    const gameId = activeNight?.games[activeGame]?.id;
+    if (!gameId) { notify("No active game — stat not saved"); return; }
+
     let newStats;
     setActiveNight((n) => {
       const games = [...n.games];
@@ -508,11 +512,10 @@ export default function App() {
       games[activeGame] = g;
       return { ...n, games };
     });
-    // Persist after state update — small debounce via setTimeout
+    // Persist with the gameId captured at call time — no stale closure
     setTimeout(() => {
-      if (newStats && activeNight) {
-        const gameId = activeNight.games[activeGame]?.id;
-        if (gameId) dbUpdateStat(gameId, pid, newStats).catch((e) => notify("Save error: " + e.message));
+      if (newStats) {
+        dbUpdateStat(gameId, pid, newStats).catch((e) => notify("Save error: " + e.message));
       }
     }, 0);
   };
@@ -612,13 +615,23 @@ export default function App() {
           .night-header-links { margin-left: 0 !important; }
           .leader-card { flex: 1 1 100% !important; }
         }
-        /* Desktop: auto-fill grid per team. Mobile: fixed 2-col side by side */
+        /* Default (phone): stacked auto-fill grid per team */
         .team-grid-desktop { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-        .team-grid-mobile-wrapper { display: none; }
-        @media (max-width: 768px) {
+        .team-scoreboard-full { display: flex; }
+        .teams-two-col { display: none; }
+        /* Tablet+ (600px+): two-column layout — score pinned above each team's player stack */
+        @media (min-width: 600px) {
+          .teams-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; margin-bottom: 20px; }
+          .team-col-tablet { display: flex; flex-direction: column; gap: 8px; }
           .team-grid-desktop { display: none; }
-          .team-grid-mobile-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
-          .team-col { display: flex; flex-direction: column; gap: 8px; }
+          .team-scoreboard-full { display: none; }
+          .team-col-score { background: #111318; border: 1px solid #1e2128; border-radius: 10px; padding: 14px 16px; text-align: center; margin-bottom: 4px; }
+        }
+        /* Narrow phone: hide two-col, show stacked sections */
+        @media (max-width: 599px) {
+          .teams-two-col { display: none; }
+          .team-grid-desktop { display: grid; }
+          .team-scoreboard-full { display: flex; }
         }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: #111; } ::-webkit-scrollbar-thumb { background: #f97316; border-radius: 2px; }
         button { cursor: pointer; border: none; outline: none; } input { outline: none; }
@@ -939,6 +952,16 @@ export default function App() {
 
                 {curGame && (
                   <div>
+                    {/* Connectivity warning: game exists but has no team assignments */}
+                    {curGame.teams.a.length === 0 && curGame.teams.b.length === 0 && Object.keys(curGame.stats).length === 0 && isAdmin && (
+                      <div style={{ marginBottom: 16, padding: "12px 16px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div>
+                          <div style={{ fontFamily: "'Bebas Neue'", fontSize: 14, letterSpacing: 2, color: "#fca5a5", marginBottom: 2 }}>⚠ GAME MAY BE INCOMPLETE</div>
+                          <div style={{ fontFamily: "'DM Sans'", fontSize: 12, color: "#888" }}>No players or teams were saved — this can happen with weak connectivity. Use Edit Teams to fix it.</div>
+                        </div>
+                        <button className="ghost-btn" style={{ borderColor: "rgba(239,68,68,0.4)", color: "#fca5a5", flexShrink: 0 }} onClick={openEditGame}>✎ EDIT TEAMS</button>
+                      </div>
+                    )}
                     {/* View toggle + winner picker */}
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                       {hasTeams(curGame) ? (
@@ -966,7 +989,7 @@ export default function App() {
                     {/* Grid mode */}
                     {trackMode === "grid" && (
                       <div>
-                        {/* Scoreboard — only show when teams are set */}
+                        {/* ── Scoreboard: phone & wide desktop (hidden on tablet via CSS) ── */}
                         {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (() => {
                           const scoreA = players
                             .filter(p => curGame.teams.a.includes(p.id))
@@ -977,17 +1000,14 @@ export default function App() {
                           const aWinning = scoreA > scoreB;
                           const bWinning = scoreB > scoreA;
                           return (
-                            <div style={{ display: "flex", alignItems: "stretch", gap: 0, marginBottom: 16, background: "#111318", border: "1px solid #1e2128", borderRadius: 10, overflow: "hidden" }}>
-                              {/* Team A */}
+                            <div className="team-scoreboard-full" style={{ alignItems: "stretch", gap: 0, marginBottom: 16, background: "#111318", border: "1px solid #1e2128", borderRadius: 10, overflow: "hidden" }}>
                               <div style={{ flex: 1, padding: "16px 20px", textAlign: "center", background: aWinning ? "rgba(59,130,246,0.08)" : "transparent", borderRight: "1px solid #1e2128" }}>
                                 <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 6 }}>TEAM A {curGame.winner === "a" ? "🏆" : ""}</div>
                                 <div style={{ fontFamily: "'Bebas Neue'", fontSize: 64, lineHeight: 1, color: aWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreA}</div>
                               </div>
-                              {/* Divider / VS */}
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "0 12px", background: "#0f1115" }}>
                                 <span style={{ fontFamily: "'Bebas Neue'", fontSize: 14, letterSpacing: 2, color: "#333" }}>VS</span>
                               </div>
-                              {/* Team B */}
                               <div style={{ flex: 1, padding: "16px 20px", textAlign: "center", background: bWinning ? "rgba(34,197,94,0.08)" : "transparent", borderLeft: "1px solid #1e2128" }}>
                                 <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 6 }}>TEAM B {curGame.winner === "b" ? "🏆" : ""}</div>
                                 <div style={{ fontFamily: "'Bebas Neue'", fontSize: 64, lineHeight: 1, color: bWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreB}</div>
@@ -995,23 +1015,44 @@ export default function App() {
                             </div>
                           );
                         })()}
-                        {/* Mobile: Team A left, Team B right. Desktop: auto-fill rows per team */}
-                        {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (
-                          <div className="team-grid-mobile-wrapper">
-                            <div className="team-col">
-                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 4 }}>TEAM A {curGame.winner === "a" && "🏆"}</div>
-                              {players.filter((p) => curGame.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
-                                <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="a" onLog={(key, delta) => logStat(p.id, key, delta)} />
-                              ))}
+
+                        {/* ── Tablet two-column layout (600px+): score + stacked players per team ── */}
+                        {curGame.teams.a.length > 0 && curGame.teams.b.length > 0 && (() => {
+                          const scoreA = players
+                            .filter(p => curGame.teams.a.includes(p.id))
+                            .reduce((sum, p) => sum + pts(curGame.stats[p.id] || emptyStats()), 0);
+                          const scoreB = players
+                            .filter(p => curGame.teams.b.includes(p.id))
+                            .reduce((sum, p) => sum + pts(curGame.stats[p.id] || emptyStats()), 0);
+                          const aWinning = scoreA > scoreB;
+                          const bWinning = scoreB > scoreA;
+                          return (
+                            <div className="teams-two-col">
+                              {/* Left column: Team A score + players */}
+                              <div className="team-col-tablet">
+                                <div className="team-col-score" style={{ background: aWinning ? "rgba(59,130,246,0.10)" : "#111318", borderColor: aWinning ? "#3b82f6" : "#1e2128" }}>
+                                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 4 }}>TEAM A {curGame.winner === "a" ? "🏆" : ""}</div>
+                                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 56, lineHeight: 1, color: aWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreA}</div>
+                                </div>
+                                {players.filter((p) => curGame.teams.a.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+                                  <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="a" onLog={(key, delta) => logStat(p.id, key, delta)} />
+                                ))}
+                              </div>
+                              {/* Right column: Team B score + players */}
+                              <div className="team-col-tablet">
+                                <div className="team-col-score" style={{ background: bWinning ? "rgba(34,197,94,0.10)" : "#111318", borderColor: bWinning ? "#22c55e" : "#1e2128" }}>
+                                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 4 }}>TEAM B {curGame.winner === "b" ? "🏆" : ""}</div>
+                                  <div style={{ fontFamily: "'Bebas Neue'", fontSize: 56, lineHeight: 1, color: bWinning ? "#e8e4d9" : "#555", transition: "color 0.2s" }}>{scoreB}</div>
+                                </div>
+                                {players.filter((p) => curGame.teams.b.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+                                  <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="b" onLog={(key, delta) => logStat(p.id, key, delta)} />
+                                ))}
+                              </div>
                             </div>
-                            <div className="team-col">
-                              <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#22c55e", marginBottom: 4 }}>TEAM B {curGame.winner === "b" && "🏆"}</div>
-                              {players.filter((p) => curGame.teams.b.includes(p.id)).sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
-                                <PlayerCard key={p.id} player={p} stats={curGame.stats[p.id] || emptyStats()} team="b" onLog={(key, delta) => logStat(p.id, key, delta)} />
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
+
+                        {/* ── Phone stacked layout (<600px): team label + auto-fill grid per team ── */}
                         {curGame.teams.a.length > 0 && (
                           <div style={{ marginBottom: 20 }}>
                             <div style={{ fontFamily: "'Bebas Neue'", fontSize: 11, letterSpacing: 3, color: "#3b82f6", marginBottom: 10 }}>TEAM A {curGame.winner === "a" && "🏆"}</div>
