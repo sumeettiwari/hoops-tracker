@@ -99,7 +99,8 @@ async function fetchNights() {
 
   const { data: npRows, error: npErr } = await supabase
     .from("night_players")
-    .select("night_id, player_id");
+    .select("night_id, player_id")
+    .limit(10000);
   if (npErr) throw npErr;
 
   const { data: gameRows, error: gameErr } = await supabase
@@ -110,12 +111,14 @@ async function fetchNights() {
 
   const { data: gpRows, error: gpErr } = await supabase
     .from("game_players")
-    .select("game_id, player_id, team");
+    .select("game_id, player_id, team")
+    .limit(10000);
   if (gpErr) throw gpErr;
 
   const { data: statRows, error: statErr } = await supabase
     .from("player_stats")
-    .select("game_id, player_id, pts2, pts3, pts3a, fgm, fga, reb, ast, stl, blk, to_");
+    .select("game_id, player_id, pts2, pts3, pts3a, fgm, fga, reb, ast, stl, blk, to_")
+    .limit(10000);
   if (statErr) throw statErr;
 
   // Assemble into the shape the app expects
@@ -472,17 +475,25 @@ export default function App() {
   const deleteGame = (idx) => wrap(async () => {
     const game = activeNight.games[idx];
     await dbDeleteGame(game.id);
-    const games = activeNight.games
-      .filter((_, i) => i !== idx)
-      .map((g, i) => ({ ...g, number: i + 1 }));
-    // Renumber in DB
-    await Promise.all(games.map((g) =>
-      supabase.from("games").update({ number: g.number }).eq("id", g.id)
+
+    // Renumber remaining games in DB
+    const remaining = activeNight.games.filter((_, i) => i !== idx);
+    await Promise.all(remaining.map((g, i) =>
+      supabase.from("games").update({ number: i + 1 }).eq("id", g.id)
     ));
-    const updated = { ...activeNight, games };
-    setActiveNight(updated);
-    setNights((prev) => prev.map((n) => n.id === updated.id ? updated : n));
-    if (activeGame >= idx) setActiveGame(Math.max(0, (activeGame || 0) - 1));
+
+    // Re-fetch nights from DB to guarantee local state is canonical.
+    // Avoids stale closure corruption when deleting multiple games in a row.
+    const freshNights = await fetchNights();
+    setNights(freshNights);
+    const freshNight = freshNights.find((n) => n.id === activeNight.id);
+    if (freshNight) {
+      setActiveNight(freshNight);
+      const newGameCount = freshNight.games.length;
+      setActiveGame(newGameCount > 0 ? Math.min(idx, newGameCount - 1) : null);
+    } else {
+      setActiveNight(null); setActiveGame(null); setView("stats");
+    }
   }, "Game removed");
 
   // logStat — update local state immediately (optimistic), then persist
